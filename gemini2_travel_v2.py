@@ -10,6 +10,7 @@ from serpapi import GoogleSearch
 from crewai import Agent, Task, Crew, Process, LLM
 from datetime import datetime
 from functools import lru_cache
+import re
 
 # Load API Keys
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "your_gemini_api_key_here")
@@ -316,6 +317,9 @@ async def get_ai_recommendation(data_type, formatted_data):
         - **🛑 Stops:** Discuss why this flight has minimal or optimal stops.
         - **💺 Travel Class:** Describe why this flight provides the best comfort and amenities.
 
+        **Format Requirements**:
+        - Use markdown formatting
+
         Use the provided flight data as the basis for your recommendation. Be sure to justify your choice using clear reasoning for each attribute. Do not repeat the flight details in your response.
         """
     elif data_type == "hotels":
@@ -339,6 +343,9 @@ async def get_ai_recommendation(data_type, formatted_data):
         - Compare it against the other options and explain why this one stands out.
         - Provide concise, well-structured reasoning to make the recommendation clear to the traveler.
         - Your recommendation should help a traveler make an informed decision based on multiple factors, not just one.
+
+        **Format Requirements**:
+        - Use markdown formatting
         """
     else:
         raise ValueError("Invalid data type for AI recommendation")
@@ -454,6 +461,11 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
     except Exception as e:
         logger.exception(f"Error generating itinerary: {str(e)}")
         return "Unable to generate itinerary due to an error. Please try again later."
+
+
+# After getting the itinerary string from the LLM
+def strip_code_fence(md: str) -> str:
+    return re.sub(r'^```(?:markdown)?\s*([\s\S]*?)```$', r'\1', md.strip(), flags=re.MULTILINE)
 
 
 # ==============================================
@@ -592,6 +604,8 @@ async def get_itinerary(itinerary_request: ItineraryRequest):
             check_in_date=itinerary_request.check_in_date,
             check_out_date=itinerary_request.check_out_date
         )
+
+        itinerary = strip_code_fence(itinerary)
 
         return AIResponse(itinerary=itinerary)
     except Exception as e:

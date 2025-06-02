@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -54,8 +53,7 @@ interface SearchResponse {
 
 @Component({
   selector: 'app-travel-planner',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  standalone: false,
   templateUrl: './travel-planner.component.html',
   styleUrls: ['./travel-planner.component.css']
 })
@@ -194,12 +192,18 @@ export class TravelPlannerComponent implements OnInit {
   downloadItinerary() {
     if (this.searchResults?.itinerary) {
       const element = document.createElement('a');
-      const file = new Blob([this.searchResults.itinerary], { type: 'text/markdown' });
+      const file = new Blob([this.itineraryMarkdown], { type: 'text/markdown' });
       element.href = URL.createObjectURL(file);
       element.download = `travel_itinerary_${this.travelForm.get('destination')?.value}_${this.travelForm.get('outboundDate')?.value}.md`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
     }
+  }
+
+  get itineraryMarkdown(): string {
+    if (!this.searchResults?.itinerary) return '';
+    // Remove ```markdown ... ```
+    return this.searchResults.itinerary.replace(/^```markdown\s*|```$/g, '').trim();
   }
 }

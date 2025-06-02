@@ -190,17 +190,17 @@
         <div *ngIf="activeTab === 'recommendations'" class="recommendations-section">
           <div *ngIf="searchMode !== 'hotels' && searchResults.ai_flight_recommendation" class="recommendation-card">
             <h3>✈️ AI Flight Recommendation</h3>
-            <div [innerHTML]="searchResults.ai_flight_recommendation"></div>
+            <div markdown [data]="searchResults.ai_flight_recommendation"></div>
           </div>
           <div *ngIf="searchMode !== 'flights' && searchResults.ai_hotel_recommendation" class="recommendation-card">
             <h3>🏨 AI Hotel Recommendation</h3>
-            <div [innerHTML]="searchResults.ai_hotel_recommendation"></div>
+            <div markdown [data]="searchResults.ai_hotel_recommendation"></div>
           </div>
         </div>
         <!-- Itinerary Tab -->
         <div *ngIf="activeTab === 'itinerary' && searchMode === 'complete'" class="itinerary-section">
           <h3>📅 Your Travel Itinerary</h3>
-          <div class="itinerary-content" [innerHTML]="searchResults.itinerary"></div>
+          <div class="itinerary-content" markdown [data]="itineraryMarkdown"></div>
           <button class="download-btn" (click)="downloadItinerary()">📥 Download Itinerary</button>
         </div>
       </div>
