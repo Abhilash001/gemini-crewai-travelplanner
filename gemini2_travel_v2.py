@@ -109,12 +109,12 @@ async def search_flights(flight_request: FlightRequest):
         "api_key": SERP_API_KEY,
         "engine": "google_flights",
         "hl": "en",
-        "gl": "us",
+        "gl": "in",
         "departure_id": flight_request.origin.strip().upper(),
         "arrival_id": flight_request.destination.strip().upper(),
         "outbound_date": flight_request.outbound_date,
         "return_date": flight_request.return_date,
-        "currency": "USD"
+        "currency": "INR"
     }
 
     search_results = await run_search(params)
@@ -133,6 +133,7 @@ async def search_flights(flight_request: FlightRequest):
         if not flight.get("flights") or len(flight["flights"]) == 0:
             continue
 
+        #TODO: Add all flights in formatted_flights, not just the first leg
         first_leg = flight["flights"][0]
         formatted_flights.append(FlightInfo(
             airline=first_leg.get("airline", "Unknown Airline"),
@@ -159,12 +160,13 @@ async def search_hotels(hotel_request: HotelRequest):
         "engine": "google_hotels",
         "q": hotel_request.location,
         "hl": "en",
-        "gl": "us",
+        "gl": "in",
         "check_in_date": hotel_request.check_in_date,
         "check_out_date": hotel_request.check_out_date,
-        "currency": "USD",
+        "currency": "INR",
         "sort_by": 3,
-        "rating": 8
+        "rating": 8,
+        "property_types": 14
     }
 
     search_results = await run_search(params)

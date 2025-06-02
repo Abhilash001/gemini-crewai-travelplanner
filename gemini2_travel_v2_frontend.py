@@ -53,7 +53,7 @@ with st.form(key="travel_search_form"):
 
     with cols[1]:
         st.subheader("🏨 Hotel Details")
-        use_flight_destination = st.checkbox("Use flight destination for hotel", value=True)
+        use_flight_destination = st.checkbox("Use flight destination for hotel", value=False)
 
         if use_flight_destination:
             location = destination
@@ -173,7 +173,7 @@ if submit_button:
                                 🕒 **Departure**: {flight['departure']}  
                                 🕘 **Arrival**: {flight['arrival']}  
                                 ⏱️ **Duration**: {flight['duration']}  
-                                💰 **Price**: **${flight['price']}**  
+                                💰 **Price**: **₹{flight['price']}**  
                                 💺 **Class**: {flight['travel_class']}
                                 """)
                                 st.button(f"🔖 Select This Flight", key=f"flight_{i}")
@@ -196,7 +196,7 @@ if submit_button:
                                 st.markdown(f"""
                                 ### 🏨 {hotel['name']}
 
-                                💰 **Price**: ${hotel['price']} per night  
+                                💰 **Price**: ₹{hotel['price']} per night  
                                 ⭐ **Rating**: {hotel['rating']}  
                                 📍 **Location**: {hotel['location']}
                                 """)
