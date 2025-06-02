@@ -17,7 +17,7 @@ The system leverages:
 - **CrewAI**: Coordinates the multi-agent workflow
 - **SerpAPI**: Retrieves real-time flight and hotel data
 - **FastAPI**: Handles backend API endpoints
-- **Streamlit**: Provides a user-friendly interface
+- **Angular**: Provides a user-friendly interface
 
 ## Key Features
 
@@ -48,10 +48,14 @@ The system leverages:
 ## Based On
 This project is based on the article: [Agentic AI: Building a Multi-Agent AI Travel Planner using Gemini LLM & Crew AI](https://medium.com/google-cloud/agentic-ai-building-a-multi-agent-ai-travel-planner-using-gemini-llm-crew-ai-6d2e93f72008)
 
+Changes were made to use Angular frontend instead of Streamlit.
+
 ## Installation
 
 ### Prerequisites
 - Python 3.8+
+- Node.js (v18 or higher)
+- npm (v9 or higher)
 - SerpAPI key for fetching real-time flight and hotel data
 - Google Gemini API key for AI recommendations
 
@@ -91,19 +95,29 @@ SERP_API_KEY = os.getenv("SERP_API_KEY", "your_serpapi_key_here")
 - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/)
 - Get a SerpAPI key from [SerpAPI](https://serpapi.com/)
 
+5. **Install Angular CLI globally:**
+   ```bash
+   npm install -g @angular/cli@19
+   ```
+
+6. **Navigate to UI folder and install project dependencies:**
+   ```bash
+   npm install
+   ```
+
 ## Usage
 
 1. Start the FastAPI backend
-```bash
-python gemini2_travel_v2.py
-```
+   ```bash
+   python gemini2_travel_v2.py
+   ```
 
-2. In a new terminal window, start the Streamlit frontend
-```bash
-python gemini2_travel_v2_frontend.py
-```
+2. In a new terminal window, navigate to UI folder and start the Angular development server:
+   ```bash
+   ng serve
+   ```
 
-3. Open your browser and navigate to http://localhost:8501
+3. Open your browser and navigate to http://localhost:4200
 
 4. Enter your travel preferences:
    - Input departure and destination airports
@@ -141,6 +155,7 @@ The application uses a collaborative AI system with specialized agents:
 - `images/`: Directory containing demonstration images and GIFs
   - `travelplanner.webp`: Static screenshot of the application interface
   - `travelplanner-demo.gif`: Animated demonstration of the application in use
+- `UI`: Angular UI. Check Readme in that folder for more details.
 
 ## Implementation Details
 
@@ -163,12 +178,8 @@ The application follows a modular architecture:
    - Real-time data display with filtering options
    - Downloadable itinerary generation
 
-## Repository
-
-This code is available on GitHub at [arjunprabhulal/gemini-crewai-travelplanner](https://github.com/arjunprabhulal/gemini-crewai-travelplanner).
-
 ## Author
 
-For more articles on AI/ML and Generative AI, follow me on Medium:
+For more articles on AI/ML and Generative AI, follow the original author on Medium:
 [https://medium.com/@arjun-prabhulal](https://medium.com/@arjun-prabhulal)
 

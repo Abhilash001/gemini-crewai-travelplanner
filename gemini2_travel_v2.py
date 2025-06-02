@@ -3,6 +3,7 @@ import uvicorn
 import asyncio
 import logging
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from serpapi import GoogleSearch
@@ -87,6 +88,14 @@ class AIResponse(BaseModel):
 # 🚀 Initialize FastAPI
 # ==============================================
 app = FastAPI(title="Travel Planning API", version="1.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend URL, e.g. ["http://localhost:4200"]
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods, including OPTIONS
+    allow_headers=["*"],
+)
 
 
 # ==============================================
