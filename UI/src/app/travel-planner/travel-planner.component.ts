@@ -5,6 +5,25 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
+interface FlightLeg {
+  departure_airport: string;
+  departure_time: string;
+  arrival_airport: string;
+  arrival_time: string;
+  airline: string;
+  airline_logo: string;
+  travel_class: string;
+  flight_number: string;
+  duration: number;
+}
+
+interface LayoverInfo {
+  airport: string;
+  airport_id: string;
+  duration: number;
+  overnight?: boolean;
+}
+
 interface Flight {
   airline: string;
   stops: string;
@@ -13,6 +32,8 @@ interface Flight {
   duration: string;
   price: number;
   travel_class: string;
+  legs?: FlightLeg[];
+  layovers?: LayoverInfo[];
 }
 
 interface Hotel {

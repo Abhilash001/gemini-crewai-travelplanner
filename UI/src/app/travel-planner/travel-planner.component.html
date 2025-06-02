@@ -140,6 +140,24 @@
                 <p>💰 <strong>Price:</strong> <strong>₹{{flight.price}}</strong></p>
                 <p>💺 <strong>Class:</strong> {{flight.travel_class}}</p>
               </div>
+              <div *ngIf="flight.legs && flight.legs.length > 0" class="flight-legs">
+                <h5>Flight Legs:</h5>
+                <ul>
+                  <li *ngFor="let leg of flight.legs">
+                    <span>🛫 <strong>{{leg.departure_airport}}</strong> at {{leg.departure_time}}</span>
+                    <span>→ 🛬 <strong>{{leg.arrival_airport}}</strong> at {{leg.arrival_time}}</span>
+                    <span> | ✈️ {{leg.airline}} ({{leg.flight_number}}), {{leg.travel_class}}, {{leg.duration}} min</span>
+                  </li>
+                </ul>
+              </div>
+              <div *ngIf="flight.layovers && flight.layovers.length > 0" class="flight-layovers">
+                <h5>Layovers:</h5>
+                <ul>
+                  <li *ngFor="let lay of flight.layovers">
+                    <span>🛑 <strong>{{lay.airport}}</strong> ({{lay.airport_id}}) - {{lay.duration}} min<span *ngIf="lay.overnight"> (Overnight)</span></span>
+                  </li>
+                </ul>
+              </div>
               <button class="select-btn">🔖 Select This Flight</button>
             </div>
           </div>

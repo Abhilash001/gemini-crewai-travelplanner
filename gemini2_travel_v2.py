@@ -56,6 +56,25 @@ class ItineraryRequest(BaseModel):
     hotels: str
 
 
+class FlightLeg(BaseModel):
+    departure_airport: str
+    departure_time: str
+    arrival_airport: str
+    arrival_time: str
+    airline: str
+    airline_logo: str
+    travel_class: str
+    flight_number: str
+    duration: int
+
+
+class LayoverInfo(BaseModel):
+    airport: str
+    airport_id: str
+    duration: int
+    overnight: Optional[bool] = False
+
+
 class FlightInfo(BaseModel):
     airline: str
     price: str
@@ -66,6 +85,8 @@ class FlightInfo(BaseModel):
     travel_class: str
     return_date: str
     airline_logo: str
+    legs: list[FlightLeg] = []
+    layovers: list[LayoverInfo] = []
 
 
 class HotelInfo(BaseModel):
@@ -142,18 +163,46 @@ async def search_flights(flight_request: FlightRequest):
         if not flight.get("flights") or len(flight["flights"]) == 0:
             continue
 
-        #TODO: Add all flights in formatted_flights, not just the first leg
+        # Build legs
+        legs = []
+        for leg in flight["flights"]:
+            legs.append({
+                "departure_airport": f"{leg.get('departure_airport', {}).get('name', 'Unknown')} ({leg.get('departure_airport', {}).get('id', '???')})",
+                "departure_time": leg.get('departure_airport', {}).get('time', 'N/A'),
+                "arrival_airport": f"{leg.get('arrival_airport', {}).get('name', 'Unknown')} ({leg.get('arrival_airport', {}).get('id', '???')})",
+                "arrival_time": leg.get('arrival_airport', {}).get('time', 'N/A'),
+                "airline": leg.get("airline", "Unknown Airline"),
+                "airline_logo": leg.get("airline_logo", ""),
+                "travel_class": leg.get("travel_class", "Economy"),
+                "flight_number": leg.get("flight_number", ""),
+                "duration": leg.get("duration", 0)
+            })
+
+        # Build layovers
+        layovers = []
+        for lay in flight.get("layovers", []):
+            layovers.append({
+                "airport": lay.get("name", ""),
+                "airport_id": lay.get("id", ""),
+                "duration": lay.get("duration", 0),
+                "overnight": lay.get("overnight", False)
+            })
+
         first_leg = flight["flights"][0]
+        last_leg = flight["flights"][-1]
+
         formatted_flights.append(FlightInfo(
             airline=first_leg.get("airline", "Unknown Airline"),
             price=str(flight.get("price", "N/A")),
             duration=f"{flight.get('total_duration', 'N/A')} min",
             stops="Nonstop" if len(flight["flights"]) == 1 else f"{len(flight['flights']) - 1} stop(s)",
             departure=f"{first_leg.get('departure_airport', {}).get('name', 'Unknown')} ({first_leg.get('departure_airport', {}).get('id', '???')}) at {first_leg.get('departure_airport', {}).get('time', 'N/A')}",
-            arrival=f"{first_leg.get('arrival_airport', {}).get('name', 'Unknown')} ({first_leg.get('arrival_airport', {}).get('id', '???')}) at {first_leg.get('arrival_airport', {}).get('time', 'N/A')}",
+            arrival=f"{last_leg.get('arrival_airport', {}).get('name', 'Unknown')} ({last_leg.get('arrival_airport', {}).get('id', '???')}) at {last_leg.get('arrival_airport', {}).get('time', 'N/A')}",
             travel_class=first_leg.get("travel_class", "Economy"),
             return_date=flight_request.return_date,
-            airline_logo=first_leg.get("airline_logo", "")
+            airline_logo=first_leg.get("airline_logo", ""),
+            legs=legs,
+            layovers=layovers
         ))
 
     logger.info(f"Found {len(formatted_flights)} flights")
