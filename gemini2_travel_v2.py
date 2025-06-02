@@ -155,12 +155,16 @@ async def search_flights(flight_request: FlightRequest):
         return {"error": search_results["error"]}
 
     best_flights = search_results.get("best_flights", [])
-    if not best_flights:
+    other_flights = search_results.get("other_flights", [])
+    if len(other_flights) > 10:
+        other_flights = other_flights[:10]  # Limit to 10 other flights for performance
+    all_flights = best_flights + other_flights
+    if not all_flights:
         logger.warning("No flights found in search results")
         return []
 
     formatted_flights = []
-    for flight in best_flights:
+    for flight in all_flights:
         if not flight.get("flights") or len(flight["flights"]) == 0:
             continue
 
