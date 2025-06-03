@@ -154,7 +154,7 @@
                 <!-- Arrow and duration -->
                 <div class="flight-middle-col">
                   <span class="flight-arrow">→</span>
-                  <span class="flight-duration">{{ flight.duration }}</span>
+                  <span class="flight-duration">{{ formatDuration(flight.duration) }}</span>
                   <span class="flight-stops">{{ flight.stops }}</span>
                   <span *ngIf="flight.layovers && flight.layovers.length" class="flight-layover-dot">•</span>
                   <span *ngIf="flight.layovers && flight.layovers.length">
@@ -187,7 +187,7 @@
               <div class="flight-row-details">
                 <div *ngIf="flight.layovers && flight.layovers.length" class="flight-layovers-summary">
                   <span *ngFor="let lay of flight.layovers; let idx = index">
-                    🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ lay.duration }} min<span *ngIf="lay.overnight"> (Overnight)</span>
+                    🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ formatDuration(lay.duration) }}<span *ngIf="lay.overnight"> (Overnight)</span>
                     <span *ngIf="flight.layovers && idx < flight.layovers.length - 1">|</span>
                   </span>
                 </div>
@@ -196,7 +196,7 @@
                     <li *ngFor="let leg of flight.legs">
                       <span>🛫 <strong>{{ leg.departure_airport }}</strong> at {{ leg.departure_time }}</span>
                       <span>→ 🛬 <strong>{{ leg.arrival_airport }}</strong> at {{ leg.arrival_time }}</span>
-                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ leg.duration }} min</span>
+                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ formatDuration(leg.duration) }}</span>
                     </li>
                   </ul>
                 </div>
@@ -229,7 +229,7 @@
                     </div>
                     <div class="flight-middle-col">
                       <span class="flight-arrow">→</span>
-                      <span class="flight-duration">{{ ret.duration }}</span>
+                      <span class="flight-duration">{{ formatDuration(ret.duration) }}</span>
                       <span class="flight-stops">{{ ret.stops }}</span>
                       <span *ngIf="ret.layovers && ret.layovers.length" class="flight-layover-dot">•</span>
                       <span *ngIf="ret.layovers && ret.layovers.length">
@@ -253,7 +253,7 @@
                     <!-- Show layovers for return flight -->
                     <div *ngIf="ret.layovers && ret.layovers.length" class="flight-layovers-summary">
                     <span *ngFor="let lay of ret.layovers; let idx = index">
-                      🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ lay.duration }} min<span *ngIf="lay.overnight"> (Overnight)</span>
+                      🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ formatDuration(lay.duration) }}<span *ngIf="lay.overnight"> (Overnight)</span>
                       <span *ngIf="ret.layovers && idx < ret.layovers.length - 1">|</span>
                     </span>
                     </div>
@@ -263,7 +263,7 @@
                       <li *ngFor="let leg of ret.legs">
                       <span>🛫 <strong>{{ leg.departure_airport }}</strong> at {{ leg.departure_time }}</span>
                       <span>→ 🛬 <strong>{{ leg.arrival_airport }}</strong> at {{ leg.arrival_time }}</span>
-                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ leg.duration }} min</span>
+                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ formatDuration(leg.duration) }}</span>
                       </li>
                     </ul>
                     </div>

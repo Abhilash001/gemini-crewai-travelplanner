@@ -32,8 +32,8 @@ interface LayoverInfo {
 
 interface ReturnFlight {
   airline: string;
-  price: string;
-  duration: string;
+  price: number;
+  duration: number;
   stops: string;
   departure: string;
   arrival: string;
@@ -48,8 +48,8 @@ interface Flight {
   stops: string;
   departure: string;
   arrival: string;
-  duration: string;
-  price: number | string;
+  duration: number;
+  price: number;
   travel_class: string;
   legs?: FlightLeg[];
   layovers?: LayoverInfo[];
@@ -59,7 +59,7 @@ interface Flight {
 interface Hotel {
   name: string;
   price: number;
-  rating: string;
+  rating: number;
   location: string;
   link: string;
 }
@@ -234,5 +234,15 @@ export class TravelPlannerComponent implements OnInit {
     if (!this.searchResults?.itinerary) return '';
     // Remove ```markdown ... ```
     return this.searchResults.itinerary.replace(/^```markdown\s*|```$/g, '').trim();
+  }
+
+  formatDuration(minutes: number | string): string {
+    const min = typeof minutes === 'string' ? parseInt(minutes, 10) : minutes;
+    if (isNaN(min) || min < 0) return '';
+    const hr = Math.floor(min / 60);
+    const rem = min % 60;
+    if (hr > 0 && rem > 0) return `${hr} hr ${rem} min`;
+    if (hr > 0) return `${hr} hr`;
+    return `${rem} min`;
   }
 }

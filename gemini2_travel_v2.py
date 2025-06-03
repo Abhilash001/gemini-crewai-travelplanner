@@ -77,8 +77,8 @@ class LayoverInfo(BaseModel):
 
 class FlightInfo(BaseModel):
     airline: str
-    price: str
-    duration: str
+    price: int
+    duration: int
     stops: str
     departure: str
     arrival: str
@@ -92,7 +92,7 @@ class FlightInfo(BaseModel):
 
 class HotelInfo(BaseModel):
     name: str
-    price: str
+    price: float
     rating: float
     location: str
     link: str
@@ -176,7 +176,7 @@ async def search_flights(flight_request: FlightRequest):
                 "airline_logo": leg.get("airline_logo", ""),
                 "travel_class": leg.get("travel_class", "Economy"),
                 "flight_number": leg.get("flight_number", ""),
-                "duration": leg.get("duration", 0)
+                "duration": int(leg.get("duration", 0))
             })
 
         # Build layovers (departure)
@@ -185,7 +185,7 @@ async def search_flights(flight_request: FlightRequest):
             layovers.append({
                 "airport": lay.get("name", ""),
                 "airport_id": lay.get("id", ""),
-                "duration": lay.get("duration", 0),
+                "duration": int(lay.get("duration", 0)),
                 "overnight": lay.get("overnight", False)
             })
 
@@ -226,12 +226,12 @@ async def search_flights(flight_request: FlightRequest):
                             "airline_logo": leg.get("airline_logo", ""),
                             "travel_class": leg.get("travel_class", "Economy"),
                             "flight_number": leg.get("flight_number", ""),
-                            "duration": leg.get("duration", 0)
+                            "duration": int(leg.get("duration", 0))
                         })
                     return_flights.append({
                         "airline": ret_flight["flights"][0].get("airline", "Unknown Airline"),
-                        "price": str(ret_flight.get("price", "N/A")),
-                        "duration": f"{ret_flight.get('total_duration', 'N/A')} min",
+                        "price": int(ret_flight.get("price", 0)),
+                        "duration": int(ret_flight.get("total_duration", 0)),
                         "stops": "Nonstop" if len(ret_flight["flights"]) == 1 else f"{len(ret_flight['flights']) - 1} stop(s)",
                         "departure": f"{ret_flight['flights'][0].get('departure_airport', {}).get('name', 'Unknown')} ({ret_flight['flights'][0].get('departure_airport', {}).get('id', '???')}) at {ret_flight['flights'][0].get('departure_airport', {}).get('time', 'N/A')}",
                         "arrival": f"{ret_flight['flights'][-1].get('arrival_airport', {}).get('name', 'Unknown')} ({ret_flight['flights'][-1].get('arrival_airport', {}).get('id', '???')}) at {ret_flight['flights'][-1].get('arrival_airport', {}).get('time', 'N/A')}",
@@ -242,7 +242,7 @@ async def search_flights(flight_request: FlightRequest):
                             {
                                 "airport": lay.get("name", ""),
                                 "airport_id": lay.get("id", ""),
-                                "duration": lay.get("duration", 0),
+                                "duration": int(lay.get("duration", 0)),
                                 "overnight": lay.get("overnight", False)
                             } for lay in ret_flight.get("layovers", [])
                         ]
@@ -252,8 +252,8 @@ async def search_flights(flight_request: FlightRequest):
 
         formatted_flights.append(FlightInfo(
             airline=first_leg.get("airline", "Unknown Airline"),
-            price=str(flight.get("price", "N/A")),
-            duration=f"{flight.get('total_duration', 'N/A')} min",
+            price=int(flight.get("price", 0)),
+            duration=int(flight.get("total_duration", 0)),
             stops="Nonstop" if len(flight["flights"]) == 1 else f"{len(flight['flights']) - 1} stop(s)",
             departure=f"{first_leg.get('departure_airport', {}).get('name', 'Unknown')} ({first_leg.get('departure_airport', {}).get('id', '???')}) at {first_leg.get('departure_airport', {}).get('time', 'N/A')}",
             arrival=f"{last_leg.get('arrival_airport', {}).get('name', 'Unknown')} ({last_leg.get('arrival_airport', {}).get('id', '???')}) at {last_leg.get('arrival_airport', {}).get('time', 'N/A')}",
@@ -303,8 +303,8 @@ async def search_hotels(hotel_request: HotelRequest):
         try:
             formatted_hotels.append(HotelInfo(
                 name=hotel.get("name", "Unknown Hotel"),
-                price=hotel.get("rate_per_night", {}).get("lowest", "N/A"),
-                rating=hotel.get("overall_rating", 0.0),
+                price=float(hotel.get("rate_per_night", {}).get("extracted_lowest", 0.0)),
+                rating=float(hotel.get("overall_rating", 0.0)),
                 location=hotel.get("location", "N/A"),
                 link=hotel.get("link", "N/A")
             ))
