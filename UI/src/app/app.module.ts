@@ -4,6 +4,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MarkdownModule } from 'ngx-markdown';
 import { TravelPlannerComponent } from './travel-planner/travel-planner.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [TravelPlannerComponent],
@@ -12,7 +13,8 @@ import { TravelPlannerComponent } from './travel-planner/travel-planner.componen
     HttpClientModule,
     FormsModule,
     ReactiveFormsModule,
-    MarkdownModule.forRoot()
+    MarkdownModule.forRoot(),
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [TravelPlannerComponent]

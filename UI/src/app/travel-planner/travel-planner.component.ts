@@ -3,6 +3,13 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import {
+  trigger,
+  state,
+  style,
+  animate,
+  transition
+} from '@angular/animations';
 
 interface FlightLeg {
   departure_airport: string;
@@ -69,7 +76,14 @@ interface SearchResponse {
   selector: 'app-travel-planner',
   standalone: false,
   templateUrl: './travel-planner.component.html',
-  styleUrls: ['./travel-planner.component.css']
+  styleUrls: ['./travel-planner.component.css'],
+  animations: [
+    trigger('collapseReturn', [
+      state('void', style({ height: '0px', opacity: 0, padding: '0 10px' })),
+      state('*', style({ height: '*', opacity: 1, padding: '10px' })),
+      transition('void <=> *', animate('250ms cubic-bezier(.4,0,.2,1)'))
+    ])
+  ]
 })
 export class TravelPlannerComponent implements OnInit {
   travelForm: FormGroup;
@@ -79,6 +93,7 @@ export class TravelPlannerComponent implements OnInit {
   errorMessage: string = '';
   searchResults: SearchResponse | null = null;
   activeTab: string = 'flights';
+  returnFlightsOpen: { [key: number]: boolean } = {};
 
   private readonly API_BASE_URL = 'http://localhost:8000';
 

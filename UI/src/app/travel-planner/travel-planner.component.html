@@ -130,69 +130,145 @@
         <!-- Flights Tab -->
         <div *ngIf="activeTab === 'flights' && searchMode !== 'hotels'" class="flights-section">
           <h3>✈️ Available Flights from {{travelForm.get('origin')?.value}} to {{travelForm.get('destination')?.value}}</h3>
-          <div *ngIf="searchResults.flights.length > 0" class="flights-grid">
-            <div *ngFor="let flight of searchResults.flights; let i = index" class="flight-card">
-              <h4>✈️ {{flight.airline}} - {{flight.stops}} Flight</h4>
-              <div class="flight-details">
-                <p>🕒 <strong>Departure:</strong> {{flight.departure}}</p>
-                <p>🕘 <strong>Arrival:</strong> {{flight.arrival}}</p>
-                <p>⏱️ <strong>Duration:</strong> {{flight.duration}}</p>
-                <p>💰 <strong>Price:</strong> <strong>₹{{flight.price}}</strong></p>
-                <p>💺 <strong>Class:</strong> {{flight.travel_class}}</p>
-              </div>
-              <div *ngIf="flight.legs && flight.legs.length > 0" class="flight-legs">
-                <h5>Flight Legs:</h5>
-                <ul>
-                  <li *ngFor="let leg of flight.legs">
-                    <span>🛫 <strong>{{leg.departure_airport}}</strong> at {{leg.departure_time}}</span>
-                    <span>→ 🛬 <strong>{{leg.arrival_airport}}</strong> at {{leg.arrival_time}}</span>
-                    <span> | ✈️ {{leg.airline}} ({{leg.flight_number}}), {{leg.travel_class}}, {{leg.duration}} min</span>
-                  </li>
-                </ul>
-              </div>
-              <div *ngIf="flight.layovers && flight.layovers.length > 0" class="flight-layovers">
-                <h5>Layovers:</h5>
-                <ul>
-                  <li *ngFor="let lay of flight.layovers">
-                    <span>🛑 <strong>{{lay.airport}}</strong> ({{lay.airport_id}}) - {{lay.duration}} min<span *ngIf="lay.overnight"> (Overnight)</span></span>
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Return Flights Section -->
-              <div *ngIf="flight.return_flights && flight.return_flights.length > 0" class="return-flights">
-                <h5>↩️ Return Flight Options:</h5>
-                <div *ngFor="let ret of flight.return_flights; let j = index" class="return-flight-card" style="margin-bottom: 12px; padding: 10px; background: #232323; border-radius: 6px;">
-                  <p><strong>Option {{j+1}}</strong></p>
-                  <p>✈️ <strong>{{ret.airline}}</strong> - {{ret.stops}}</p>
-                  <p>🕒 <strong>Departure:</strong> {{ret.departure}}</p>
-                  <p>🕘 <strong>Arrival:</strong> {{ret.arrival}}</p>
-                  <p>⏱️ <strong>Duration:</strong> {{ret.duration}}</p>
-                  <p>💰 <strong>Price:</strong> ₹{{ret.price}}</p>
-                  <p>💺 <strong>Class:</strong> {{ret.travel_class}}</p>
-                  <div *ngIf="ret.legs && ret.legs.length > 0">
-                    <h6>Legs:</h6>
-                    <ul>
-                      <li *ngFor="let leg of ret.legs">
-                        <span>🛫 <strong>{{leg.departure_airport}}</strong> at {{leg.departure_time}}</span>
-                        <span>→ 🛬 <strong>{{leg.arrival_airport}}</strong> at {{leg.arrival_time}}</span>
-                        <span> | ✈️ {{leg.airline}} ({{leg.flight_number}}), {{leg.travel_class}}, {{leg.duration}} min</span>
-                      </li>
-                    </ul>
-                  </div>
-                  <div *ngIf="ret.layovers && ret.layovers.length > 0">
-                    <h6>Layovers:</h6>
-                    <ul>
-                      <li *ngFor="let lay of ret.layovers">
-                        <span>🛑 <strong>{{lay.airport}}</strong> ({{lay.airport_id}}) - {{lay.duration}} min<span *ngIf="lay.overnight"> (Overnight)</span></span>
-                      </li>
-                    </ul>
+          <div *ngIf="searchResults.flights.length > 0" class="flights-list">
+            <div *ngFor="let flight of searchResults.flights; let i = index" class="flight-row">
+              <div class="flight-row-main">
+                <!-- Airline logo and name -->
+                <div class="flight-airline-col">
+                  <img *ngIf="flight.legs && flight.legs.length > 0 && flight.legs[0].airline_logo"
+                       [src]="flight.legs[0].airline_logo"
+                       class="airline-logo"
+                       alt="{{flight.airline}} logo" />
+                  <div>
+                    <div class="flight-airline-name">{{ flight.airline }}</div>
+                    <div class="flight-class">{{ flight.travel_class }}</div>
                   </div>
                 </div>
+                <!-- Departure info -->
+                <div class="flight-time-col">
+                  <div class="flight-time-main">
+                    <span class="flight-time">{{ flight.legs && flight.legs.length > 0 ? flight.legs[0].departure_time : flight.departure }}</span>
+                    <span class="flight-airport">{{ flight.legs && flight.legs.length > 0 ? flight.legs[0].departure_airport : travelForm.get('origin')?.value }}</span>
+                  </div>
+                </div>
+                <!-- Arrow and duration -->
+                <div class="flight-middle-col">
+                  <span class="flight-arrow">→</span>
+                  <span class="flight-duration">{{ flight.duration }}</span>
+                  <span class="flight-stops">{{ flight.stops }}</span>
+                  <span *ngIf="flight.layovers && flight.layovers.length" class="flight-layover-dot">•</span>
+                  <span *ngIf="flight.layovers && flight.layovers.length">
+                    {{ flight.layovers.length }} layover{{ flight.layovers.length > 1 ? 's' : '' }}
+                  </span>
+                </div>
+                <!-- Arrival info -->
+                <div class="flight-time-col">
+                  <div class="flight-time-main">
+                    <span class="flight-time">
+                      {{ flight.legs && flight.legs.length > 0 ? flight.legs[flight.legs.length-1].arrival_time : flight.arrival }}
+                    </span>
+                    <span class="flight-airport">
+                      {{ flight.legs && flight.legs.length > 0 ? flight.legs[flight.legs.length-1].arrival_airport : travelForm.get('destination')?.value }}
+                    </span>
+                  </div>
+                </div>
+                <!-- Price and select -->
+                <div class="flight-price-col">
+                  <div class="flight-price">₹{{ flight.price }}</div>
+                  <button class="select-btn modern-select-btn">Select flight</button>
+                  <button *ngIf="flight.return_flights?.length"
+                          class="select-btn"
+                          (click)="returnFlightsOpen[i] = !returnFlightsOpen[i]">
+                    {{ returnFlightsOpen[i] ? 'Hide' : 'Show' }} return flights
+                  </button>
+                </div>
               </div>
-              <!-- End Return Flights Section -->
-
-              <button class="select-btn">🔖 Select This Flight</button>
+              <!-- Details row (optional, can be collapsible) -->
+              <div class="flight-row-details">
+                <div *ngIf="flight.layovers && flight.layovers.length" class="flight-layovers-summary">
+                  <span *ngFor="let lay of flight.layovers; let idx = index">
+                    🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ lay.duration }} min<span *ngIf="lay.overnight"> (Overnight)</span>
+                    <span *ngIf="flight.layovers && idx < flight.layovers.length - 1">|</span>
+                  </span>
+                </div>
+                <div *ngIf="flight.legs && flight.legs.length > 0" class="flight-legs-summary">
+                  <ul>
+                    <li *ngFor="let leg of flight.legs">
+                      <span>🛫 <strong>{{ leg.departure_airport }}</strong> at {{ leg.departure_time }}</span>
+                      <span>→ 🛬 <strong>{{ leg.arrival_airport }}</strong> at {{ leg.arrival_time }}</span>
+                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ leg.duration }} min</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <!-- Return Flights Section -->
+              <div *ngIf="flight.return_flights?.length && returnFlightsOpen[i]"
+                   class="return-flights"
+                   [@collapseReturn]>
+                <div *ngFor="let ret of flight.return_flights; let j = index" class="return-flight-card">
+                  <div class="flight-row-main">
+                    <div class="flight-airline-col">
+                      <img *ngIf="ret.legs && ret.legs.length > 0 && ret.legs[0].airline_logo"
+                           [src]="ret.legs[0].airline_logo"
+                           class="airline-logo"
+                           alt="{{ret.airline}} logo" />
+                      <div>
+                        <div class="flight-airline-name">{{ ret.airline }}</div>
+                        <div class="flight-class">{{ ret.travel_class }}</div>
+                      </div>
+                    </div>
+                    <div class="flight-time-col">
+                      <div class="flight-time-main">
+                        <span class="flight-time">
+                          {{ ret.legs && ret.legs.length > 0 ? ret.legs[0].departure_time : '' }}
+                        </span>
+                        <span class="flight-airport">
+                          {{ ret.legs && ret.legs.length > 0 ? ret.legs[0].departure_airport : '' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flight-middle-col">
+                      <span class="flight-arrow">→</span>
+                      <span class="flight-duration">{{ ret.duration }}</span>
+                      <span class="flight-stops">{{ ret.stops }}</span>
+                      <span *ngIf="ret.layovers && ret.layovers.length" class="flight-layover-dot">•</span>
+                      <span *ngIf="ret.layovers && ret.layovers.length">
+                        {{ ret.layovers.length }} layover{{ ret.layovers.length > 1 ? 's' : '' }}
+                      </span>
+                    </div>
+                    <div class="flight-time-col">
+                      <div class="flight-time-main">
+                        <span class="flight-time">
+                          {{ ret.legs && ret.legs.length > 0 ? ret.legs[ret.legs.length-1].arrival_time : '' }}
+                        </span>
+                        <span class="flight-airport">
+                          {{ ret.legs && ret.legs.length > 0 ? ret.legs[ret.legs.length-1].arrival_airport : '' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flight-price-col">
+                      <div class="flight-price">₹{{ ret.price }}</div>
+                    </div>
+                  </div>
+                    <!-- Show layovers for return flight -->
+                    <div *ngIf="ret.layovers && ret.layovers.length" class="flight-layovers-summary">
+                    <span *ngFor="let lay of ret.layovers; let idx = index">
+                      🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ lay.duration }} min<span *ngIf="lay.overnight"> (Overnight)</span>
+                      <span *ngIf="ret.layovers && idx < ret.layovers.length - 1">|</span>
+                    </span>
+                    </div>
+                    <!-- Show legs for return flight -->
+                    <div *ngIf="ret.legs && ret.legs.length > 0" class="flight-legs-summary">
+                    <ul>
+                      <li *ngFor="let leg of ret.legs">
+                      <span>🛫 <strong>{{ leg.departure_airport }}</strong> at {{ leg.departure_time }}</span>
+                      <span>→ 🛬 <strong>{{ leg.arrival_airport }}</strong> at {{ leg.arrival_time }}</span>
+                      <span> | ✈️ {{ leg.airline }} ({{ leg.flight_number }}), {{ leg.travel_class }}, {{ leg.duration }} min</span>
+                      </li>
+                    </ul>
+                    </div>
+                </div>
+              </div>
             </div>
           </div>
           <div *ngIf="searchResults.flights.length === 0" class="no-results">
