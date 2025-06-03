@@ -62,35 +62,35 @@ Changes were made to use Angular frontend instead of Streamlit.
 ### Setup
 
 1. Clone the repository
-```bash
-git clone https://github.com/arjunprabhulal/gemini-crewai-travelplanner.git
-cd gemini-crewai-travelplanner
-```
+   ```bash
+   git clone https://github.com/arjunprabhulal/gemini-crewai-travelplanner.git
+   cd gemini-crewai-travelplanner
+   ```
 
 2. Create and activate a virtual environment
-```bash
-# Create virtual environment
-python -m venv venv
+   ```bash
+   # Create virtual environment
+   python -m venv venv
 
-# Activate virtual environment
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
+   # Activate virtual environment
+   # On Windows
+   venv\Scripts\activate
+   # On macOS/Linux
+   source venv/bin/activate
+   ```
 
 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 4. Configure API keys
-Set your API keys in the gemini2_travel_v2.py file:
-```python
-# Load API Keys
-GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "your_gemini_api_key_here")
-SERP_API_KEY = os.getenv("SERP_API_KEY", "your_serpapi_key_here")
-```
+   
+   Set your API keys in the .env file:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   SERP_API_KEY=your_serpapi_key_here
+   ```
 
 - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/)
 - Get a SerpAPI key from [SerpAPI](https://serpapi.com/)

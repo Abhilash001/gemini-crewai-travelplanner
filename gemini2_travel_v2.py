@@ -12,9 +12,8 @@ from datetime import datetime
 from functools import lru_cache
 import re
 
-# Load API Keys
-GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY", "your_gemini_api_key_here")
-SERP_API_KEY = os.getenv("SERP_API_KEY", "your_serpapi_key_here")
+GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
+SERP_API_KEY = os.getenv("SERP_API_KEY")
 
 # Initialize Logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
