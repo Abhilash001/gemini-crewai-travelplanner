@@ -158,6 +158,40 @@
                   </li>
                 </ul>
               </div>
+
+              <!-- Return Flights Section -->
+              <div *ngIf="flight.return_flights && flight.return_flights.length > 0" class="return-flights">
+                <h5>↩️ Return Flight Options:</h5>
+                <div *ngFor="let ret of flight.return_flights; let j = index" class="return-flight-card" style="margin-bottom: 12px; padding: 10px; background: #232323; border-radius: 6px;">
+                  <p><strong>Option {{j+1}}</strong></p>
+                  <p>✈️ <strong>{{ret.airline}}</strong> - {{ret.stops}}</p>
+                  <p>🕒 <strong>Departure:</strong> {{ret.departure}}</p>
+                  <p>🕘 <strong>Arrival:</strong> {{ret.arrival}}</p>
+                  <p>⏱️ <strong>Duration:</strong> {{ret.duration}}</p>
+                  <p>💰 <strong>Price:</strong> ₹{{ret.price}}</p>
+                  <p>💺 <strong>Class:</strong> {{ret.travel_class}}</p>
+                  <div *ngIf="ret.legs && ret.legs.length > 0">
+                    <h6>Legs:</h6>
+                    <ul>
+                      <li *ngFor="let leg of ret.legs">
+                        <span>🛫 <strong>{{leg.departure_airport}}</strong> at {{leg.departure_time}}</span>
+                        <span>→ 🛬 <strong>{{leg.arrival_airport}}</strong> at {{leg.arrival_time}}</span>
+                        <span> | ✈️ {{leg.airline}} ({{leg.flight_number}}), {{leg.travel_class}}, {{leg.duration}} min</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div *ngIf="ret.layovers && ret.layovers.length > 0">
+                    <h6>Layovers:</h6>
+                    <ul>
+                      <li *ngFor="let lay of ret.layovers">
+                        <span>🛑 <strong>{{lay.airport}}</strong> ({{lay.airport_id}}) - {{lay.duration}} min<span *ngIf="lay.overnight"> (Overnight)</span></span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <!-- End Return Flights Section -->
+
               <button class="select-btn">🔖 Select This Flight</button>
             </div>
           </div>

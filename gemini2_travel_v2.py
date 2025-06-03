@@ -87,6 +87,7 @@ class FlightInfo(BaseModel):
     airline_logo: str
     legs: list[FlightLeg] = []
     layovers: list[LayoverInfo] = []
+    return_flights: Optional[list] = []
 
 
 class HotelInfo(BaseModel):
@@ -154,20 +155,16 @@ async def search_flights(flight_request: FlightRequest):
         return {"error": search_results["error"]}
 
     best_flights = search_results.get("best_flights", [])
-    other_flights = search_results.get("other_flights", [])
-    if len(other_flights) > 10:
-        other_flights = other_flights[:10]  # Limit to 10 other flights for performance
-    all_flights = best_flights + other_flights
-    if not all_flights:
+    if not best_flights:
         logger.warning("No flights found in search results")
         return []
 
     formatted_flights = []
-    for flight in all_flights:
+    for flight in best_flights:
         if not flight.get("flights") or len(flight["flights"]) == 0:
             continue
 
-        # Build legs
+        # Build legs (departure)
         legs = []
         for leg in flight["flights"]:
             legs.append({
@@ -182,7 +179,7 @@ async def search_flights(flight_request: FlightRequest):
                 "duration": leg.get("duration", 0)
             })
 
-        # Build layovers
+        # Build layovers (departure)
         layovers = []
         for lay in flight.get("layovers", []):
             layovers.append({
@@ -195,6 +192,64 @@ async def search_flights(flight_request: FlightRequest):
         first_leg = flight["flights"][0]
         last_leg = flight["flights"][-1]
 
+        # --- Fetch return flights using departure_token ---
+        return_flights = []
+        departure_token = flight.get("departure_token")
+        if departure_token:
+            return_params = {
+                "api_key": SERP_API_KEY,
+                "engine": "google_flights",
+                "hl": "en",
+                "gl": "in",
+                "departure_id": flight_request.origin.strip().upper(),
+                "arrival_id": flight_request.destination.strip().upper(),
+                "outbound_date": flight_request.outbound_date,
+                "return_date": flight_request.return_date,
+                "currency": "INR",
+                "departure_token": departure_token
+            }
+            try:
+                return_results = await run_search(return_params)
+                return_top_flights = return_results.get("best_flights", [])
+                if not return_top_flights:
+                    return_top_flights = return_results.get("other_flights", [])
+                    return_top_flights = return_top_flights[:min(3, len(return_top_flights))]  # Limit to 3 other flights
+                for ret_flight in return_top_flights:
+                    ret_legs = []
+                    for leg in ret_flight["flights"]:
+                        ret_legs.append({
+                            "departure_airport": f"{leg.get('departure_airport', {}).get('name', 'Unknown')} ({leg.get('departure_airport', {}).get('id', '???')})",
+                            "departure_time": leg.get('departure_airport', {}).get('time', 'N/A'),
+                            "arrival_airport": f"{leg.get('arrival_airport', {}).get('name', 'Unknown')} ({leg.get('arrival_airport', {}).get('id', '???')})",
+                            "arrival_time": leg.get('arrival_airport', {}).get('time', 'N/A'),
+                            "airline": leg.get("airline", "Unknown Airline"),
+                            "airline_logo": leg.get("airline_logo", ""),
+                            "travel_class": leg.get("travel_class", "Economy"),
+                            "flight_number": leg.get("flight_number", ""),
+                            "duration": leg.get("duration", 0)
+                        })
+                    return_flights.append({
+                        "airline": ret_flight["flights"][0].get("airline", "Unknown Airline"),
+                        "price": str(ret_flight.get("price", "N/A")),
+                        "duration": f"{ret_flight.get('total_duration', 'N/A')} min",
+                        "stops": "Nonstop" if len(ret_flight["flights"]) == 1 else f"{len(ret_flight['flights']) - 1} stop(s)",
+                        "departure": f"{ret_flight['flights'][0].get('departure_airport', {}).get('name', 'Unknown')} ({ret_flight['flights'][0].get('departure_airport', {}).get('id', '???')}) at {ret_flight['flights'][0].get('departure_airport', {}).get('time', 'N/A')}",
+                        "arrival": f"{ret_flight['flights'][-1].get('arrival_airport', {}).get('name', 'Unknown')} ({ret_flight['flights'][-1].get('arrival_airport', {}).get('id', '???')}) at {ret_flight['flights'][-1].get('arrival_airport', {}).get('time', 'N/A')}",
+                        "travel_class": ret_flight["flights"][0].get("travel_class", "Economy"),
+                        "airline_logo": ret_flight["flights"][0].get("airline_logo", ""),
+                        "legs": ret_legs,
+                        "layovers": [
+                            {
+                                "airport": lay.get("name", ""),
+                                "airport_id": lay.get("id", ""),
+                                "duration": lay.get("duration", 0),
+                                "overnight": lay.get("overnight", False)
+                            } for lay in ret_flight.get("layovers", [])
+                        ]
+                    })
+            except Exception as e:
+                logger.warning(f"Error fetching return flights: {str(e)}")
+
         formatted_flights.append(FlightInfo(
             airline=first_leg.get("airline", "Unknown Airline"),
             price=str(flight.get("price", "N/A")),
@@ -206,7 +261,8 @@ async def search_flights(flight_request: FlightRequest):
             return_date=flight_request.return_date,
             airline_logo=first_leg.get("airline_logo", ""),
             legs=legs,
-            layovers=layovers
+            layovers=layovers,
+            return_flights=return_flights  # Attach return flights here
         ))
 
     logger.info(f"Found {len(formatted_flights)} flights")
@@ -269,18 +325,33 @@ def format_travel_data(data_type, data):
         return f"No {data_type} available."
 
     if data_type == "flights":
-        formatted_text = "✈️ **Available flight options**:\n\n"
+        formatted_text = "✈️ **Available round-trip flight options**:\n\n"
         for i, flight in enumerate(data):
             formatted_text += (
-                f"**Flight {i + 1}:**\n"
+                f"**Option {i + 1}:**\n"
+                f"**Departure Flight:**\n"
                 f"✈️ **Airline:** {flight.airline}\n"
-                f"💰 **Price:** ${flight.price}\n"
+                f"💰 **Price:** ₹{flight.price}\n"
                 f"⏱️ **Duration:** {flight.duration}\n"
                 f"🛑 **Stops:** {flight.stops}\n"
                 f"🕔 **Departure:** {flight.departure}\n"
                 f"🕖 **Arrival:** {flight.arrival}\n"
-                f"💺 **Class:** {flight.travel_class}\n\n"
+                f"💺 **Class:** {flight.travel_class}\n"
             )
+            # List return flights for this departure
+            if flight.return_flights:
+                for j, ret in enumerate(flight.return_flights):
+                    formatted_text += (
+                        f"\n  ↩️ **Return Flight {j + 1}:**\n"
+                        f"  ✈️ **Airline:** {ret['airline']}\n"
+                        f"  💰 **Price:** ₹{ret['price']}\n"
+                        f"  ⏱️ **Duration:** {ret['duration']}\n"
+                        f"  🛑 **Stops:** {ret['stops']}\n"
+                        f"  🕔 **Departure:** {ret['departure']}\n"
+                        f"  🕖 **Arrival:** {ret['arrival']}\n"
+                        f"  💺 **Class:** {ret['travel_class']}\n"
+                    )
+            formatted_text += "\n"
     elif data_type == "hotels":
         formatted_text = "🏨 **Available Hotel Options**:\n\n"
         for i, hotel in enumerate(data):
@@ -309,21 +380,21 @@ async def get_ai_recommendation(data_type, formatted_data):
     # Configure agent based on data type
     if data_type == "flights":
         role = "AI Flight Analyst"
-        goal = "Analyze flight options and recommend the best one considering price, duration, stops, and overall convenience."
-        backstory = f"AI expert that provides in-depth analysis comparing flight options based on multiple factors."
+        goal = "Analyze round-trip flight options and recommend the best combination considering price, duration, stops, and overall convenience for both departure and return flights."
+        backstory = f"AI expert that provides in-depth analysis comparing round-trip flight options based on multiple factors."
         description = """
-        Recommend the best flight from the available options, based on the details provided below:
+        Recommend the best round-trip flight combination from the available options, based on the details provided below:
 
         **Reasoning for Recommendation:**
-        - **💰 Price:** Provide a detailed explanation about why this flight offers the best value compared to others.
-        - **⏱️ Duration:** Explain why this flight has the best duration in comparison to others.
-        - **🛑 Stops:** Discuss why this flight has minimal or optimal stops.
-        - **💺 Travel Class:** Describe why this flight provides the best comfort and amenities.
+        - **💰 Price:** Explain why this round-trip offers the best value.
+        - **⏱️ Duration:** Explain why the total travel time is optimal.
+        - **🛑 Stops:** Discuss the convenience of stops for both legs.
+        - **💺 Travel Class:** Describe comfort and amenities for both flights.
 
         **Format Requirements**:
         - Use markdown formatting
 
-        Use the provided flight data as the basis for your recommendation. Be sure to justify your choice using clear reasoning for each attribute. Do not repeat the flight details in your response.
+        Use the provided round-trip flight data as the basis for your recommendation. Be sure to justify your choice using clear reasoning for both departure and return flights. Do not repeat the flight details in your response.
         """
     elif data_type == "hotels":
         role = "AI Hotel Analyst"

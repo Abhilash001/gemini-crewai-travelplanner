@@ -23,16 +23,30 @@ interface LayoverInfo {
   overnight?: boolean;
 }
 
+interface ReturnFlight {
+  airline: string;
+  price: string;
+  duration: string;
+  stops: string;
+  departure: string;
+  arrival: string;
+  travel_class: string;
+  airline_logo: string;
+  legs?: FlightLeg[];
+  layovers?: LayoverInfo[];
+}
+
 interface Flight {
   airline: string;
   stops: string;
   departure: string;
   arrival: string;
   duration: string;
-  price: number;
+  price: number | string;
   travel_class: string;
   legs?: FlightLeg[];
   layovers?: LayoverInfo[];
+  return_flights?: ReturnFlight[];
 }
 
 interface Hotel {
