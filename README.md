@@ -63,7 +63,7 @@ Changes were made to use Angular frontend instead of Streamlit.
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/arjunprabhulal/gemini-crewai-travelplanner.git
+   git clone https://github.com/Abhilash001/gemini-crewai-travelplanner.git
    cd gemini-crewai-travelplanner
    ```
 
