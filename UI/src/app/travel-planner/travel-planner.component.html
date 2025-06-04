@@ -56,28 +56,35 @@
         <!-- Hotel Details -->
         <div class="form-section">
           <h2>🏨 Hotel Details</h2>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="useFlightDestination" [ngModelOptions]="{standalone: true}">
-              Use flight destination for hotel
-            </label>
-          </div>
-          <div class="form-group" *ngIf="!useFlightDestination">
-            <label>Hotel Location</label>
-            <input type="text" formControlName="location" class="form-control">
-          </div>
-          <div class="form-group" *ngIf="useFlightDestination">
-            <div class="info-message">
-              Using flight destination ({{travelForm.get('destination')?.value}}) for hotel search
+          <div formArrayName="hotelLocations">
+            <div *ngFor="let hotelCtrl of hotelLocations.controls; let i = index" [formGroupName]="i" class="hotel-location-group">
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" formControlName="useFlightDestination">
+                  Use flight destination for hotel
+                </label>
+              </div>
+              <div class="form-group" *ngIf="!hotelCtrl.get('useFlightDestination')?.value">
+                <label>Hotel Location</label>
+                <input type="text" formControlName="location" class="form-control" placeholder="Enter location">
+              </div>
+              <div class="form-group" *ngIf="hotelCtrl.get('useFlightDestination')?.value">
+                <div class="info-message">
+                  Using flight destination ({{travelForm.get('destination')?.value}}) for hotel search
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Check-In Date</label>
+                <input type="date" formControlName="checkInDate" class="form-control">
+              </div>
+              <div class="form-group">
+                <label>Check-Out Date</label>
+                <input type="date" formControlName="checkOutDate" class="form-control">
+              </div>
+              <button type="button" class="select-btn" (click)="removeHotelLocation(i)" *ngIf="hotelLocations.length > 1">Remove</button>
+              <hr *ngIf="i < hotelLocations.length - 1">
             </div>
-          </div>
-          <div class="form-group">
-            <label>Check-In Date</label>
-            <input type="date" formControlName="checkInDate" class="form-control">
-          </div>
-          <div class="form-group">
-            <label>Check-Out Date</label>
-            <input type="date" formControlName="checkOutDate" class="form-control">
+            <button type="button" class="select-btn" (click)="addHotelLocation()">+ Add Another Location</button>
           </div>
         </div>
       </div>
@@ -277,24 +284,37 @@
         </div>
         <!-- Hotels Tab -->
         <div *ngIf="activeTab === 'hotels' && searchMode !== 'flights'" class="hotels-section">
-          <h3>🏨 Available Hotels in {{getHotelLocation()}}</h3>
-          <div *ngIf="searchResults.hotels.length > 0" class="hotels-grid">
-            <div *ngFor="let hotel of searchResults.hotels; let i = index" class="hotel-card">
-              <h4>🏨 {{hotel.name}}</h4>
-              <div class="hotel-details">
-                <p>💰 <strong>Price:</strong> ₹{{hotel.price}} per night</p>
-                <p>⭐ <strong>Rating:</strong> {{hotel.rating}}</p>
-                <p>📍 <strong>Location:</strong> {{hotel.location}}</p>
+          <ng-container *ngIf="searchResults.hotels_grouped.length > 0; else noHotels">
+            <div *ngFor="let group of searchResults.hotels_grouped; let idx = index" class="hotel-location-group">
+              <h3>
+                🏨 Hotels in {{ group.location }}
+                <span style="font-weight:normal;">
+                  ({{ group.check_in_date }} to {{ group.check_out_date }})
+                </span>
+              </h3>
+              <div *ngIf="group.hotels.length > 0" class="hotels-grid">
+                <div *ngFor="let hotel of group.hotels" class="hotel-card">
+                  <h4>🏨 {{hotel.name}}</h4>
+                  <div class="hotel-details">
+                    <p>💰 <strong>Price:</strong> ₹{{hotel.price}} per night</p>
+                    <p>⭐ <strong>Rating:</strong> {{hotel.rating}}</p>
+                    <p>📍 <strong>Location:</strong> {{hotel.location}}</p>
+                  </div>
+                  <div class="hotel-actions">
+                    <button class="select-btn">🔖 Select</button>
+                    <a [href]="hotel.link" target="_blank" class="details-btn">🔗 Details</a>
+                  </div>
+                </div>
               </div>
-              <div class="hotel-actions">
-                <button class="select-btn">🔖 Select</button>
-                <a [href]="hotel.link" target="_blank" class="details-btn">🔗 Details</a>
+              <div *ngIf="group.hotels.length === 0" class="no-results">
+                No hotels found for this location.
               </div>
+              <hr *ngIf="idx < searchResults.hotels_grouped.length - 1">
             </div>
-          </div>
-          <div *ngIf="searchResults.hotels.length === 0" class="no-results">
-            No hotels found for your search criteria.
-          </div>
+          </ng-container>
+          <ng-template #noHotels>
+            <div class="no-results">No hotels found for your search criteria.</div>
+          </ng-template>
         </div>
         <!-- Recommendations Tab -->
         <div *ngIf="activeTab === 'recommendations'" class="recommendations-section">
@@ -302,10 +322,13 @@
             <h3>✈️ AI Flight Recommendation</h3>
             <div markdown [data]="searchResults.ai_flight_recommendation"></div>
           </div>
-          <div *ngIf="searchMode !== 'flights' && searchResults.ai_hotel_recommendation" class="recommendation-card">
-            <h3>🏨 AI Hotel Recommendation</h3>
-            <div markdown [data]="searchResults.ai_hotel_recommendation"></div>
-          </div>
+          <!-- Show all hotel recommendations -->
+          <ng-container *ngIf="searchMode !== 'flights' && searchResults.ai_hotel_recommendations">
+            <div *ngFor="let rec of searchResults.ai_hotel_recommendations; let i = index" class="recommendation-card">
+              <h3>🏨 AI Hotel Recommendation for Location {{i + 1}}</h3>
+              <div markdown [data]="rec"></div>
+            </div>
+          </ng-container>
         </div>
         <!-- Itinerary Tab -->
         <div *ngIf="activeTab === 'itinerary' && searchMode === 'complete'" class="itinerary-section">

@@ -97,12 +97,18 @@ class HotelInfo(BaseModel):
     location: str
     link: str
 
+class HotelsGrouped(BaseModel):
+    location: str
+    check_in_date: str
+    check_out_date: str
+    hotels: List[HotelInfo] = []
 
 class AIResponse(BaseModel):
     flights: List[FlightInfo] = []
     hotels: List[HotelInfo] = []
+    hotels_grouped: List[HotelsGrouped] = []
     ai_flight_recommendation: str = ""
-    ai_hotel_recommendation: str = ""
+    ai_hotel_recommendations: Optional[List[str]] = []
     itinerary: str = ""
 
 

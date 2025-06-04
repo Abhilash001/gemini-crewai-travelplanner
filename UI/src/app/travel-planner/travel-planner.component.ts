@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -64,11 +64,19 @@ interface Hotel {
   link: string;
 }
 
+interface HotelsGrouped {
+  location: string;
+  check_in_date: string;
+  check_out_date: string;
+  hotels: Hotel[];
+}
+
 interface SearchResponse {
   flights: Flight[];
   hotels: Hotel[];
+  hotels_grouped: HotelsGrouped[];
   ai_flight_recommendation: string;
-  ai_hotel_recommendation: string;
+  ai_hotel_recommendations: string[];
   itinerary: string;
 }
 
@@ -110,6 +118,11 @@ export class TravelPlannerComponent implements OnInit {
   }
 
   ngOnInit() {
+    // Initialize hotelLocations with one entry
+    if (!this.travelForm.get('hotelLocations')) {
+      this.travelForm.addControl('hotelLocations', this.fb.array([]));
+      this.addHotelLocation();
+    }
     // Set default active tab based on search mode
     this.setDefaultActiveTab();
   }
@@ -133,6 +146,25 @@ export class TravelPlannerComponent implements OnInit {
       this.activeTab = 'hotels';
     } else {
       this.activeTab = 'flights';
+    }
+  }
+
+  get hotelLocations(): FormArray {
+    return this.travelForm.get('hotelLocations') as FormArray;
+  }
+
+  addHotelLocation() {
+    this.hotelLocations.push(this.fb.group({
+      location: [''],
+      checkInDate: [this.getTomorrowDate(), Validators.required],
+      checkOutDate: [this.getNextWeekDate(), Validators.required],
+      useFlightDestination: [false]
+    }));
+  }
+
+  removeHotelLocation(index: number) {
+    if (this.hotelLocations.length > 1) {
+      this.hotelLocations.removeAt(index);
     }
   }
 
@@ -165,12 +197,14 @@ export class TravelPlannerComponent implements OnInit {
       return_date: formValues.returnDate
     };
 
-    const hotelLocation = this.useFlightDestination ? formValues.destination : formValues.location;
-    const hotelData = {
-      location: hotelLocation,
-      check_in_date: formValues.checkInDate,
-      check_out_date: formValues.checkOutDate
-    };
+    const hotelRequests = this.hotelLocations.controls.map((ctrl: any) => {
+      const val = ctrl.value;
+      return {
+        location: val.useFlightDestination ? this.travelForm.get('destination')?.value : val.location,
+        check_in_date: val.checkInDate,
+        check_out_date: val.checkOutDate
+      };
+    });
 
     let request: Observable<SearchResponse>;
 
@@ -178,7 +212,7 @@ export class TravelPlannerComponent implements OnInit {
       case 'complete':
         const completeData = {
           flight_request: flightData,
-          hotel_request: hotelData
+          hotel_request: hotelRequests
         };
         request = this.http.post<SearchResponse>(`${this.API_BASE_URL}/complete_search/`, completeData);
         break;
@@ -186,7 +220,7 @@ export class TravelPlannerComponent implements OnInit {
         request = this.http.post<SearchResponse>(`${this.API_BASE_URL}/search_flights/`, flightData);
         break;
       case 'hotels':
-        request = this.http.post<SearchResponse>(`${this.API_BASE_URL}/search_hotels/`, hotelData);
+        request = this.http.post<SearchResponse>(`${this.API_BASE_URL}/search_hotels/`, hotelRequests);
         break;
       default:
         this.loading = false;

@@ -1,13 +1,14 @@
 import asyncio
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import List, Optional
 
 from common import (
     AIResponse, 
     FlightRequest, 
-    HotelRequest, 
+    HotelRequest,
+    HotelsGrouped, 
     ItineraryRequest, 
     logger, 
     format_travel_data, 
@@ -69,32 +70,51 @@ async def get_flight_recommendations(flight_request: FlightRequest):
 
 
 @app.post("/search_hotels/", response_model=AIResponse)
-async def get_hotel_recommendations(hotel_request: HotelRequest):
+async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] = Body(default=None)):
     """Search hotels and get AI recommendation."""
     try:
+       # Run hotel searches for each location
         hotel_provider = os.getenv("HOTEL_PROVIDER", "booking").lower()
-        if hotel_provider == "google":
-            hotels = await search_google_hotels(hotel_request)
-        else:
-            hotels = await search_booking_hotels(hotel_request)
+        semaphore = asyncio.Semaphore(2)  # Limit to 2 concurrent searches
 
-        # Handle errors
-        if isinstance(hotels, dict) and "error" in hotels:
-            raise HTTPException(status_code=400, detail=hotels["error"])
+        async def search_one(req):
+            async with semaphore:
+                if hotel_provider == "google":
+                    return await search_google_hotels(req)
+                else:
+                    return await search_booking_hotels(req)
 
-        if not hotels:
+        # Launch all searches, but only 2 run at a time
+        hotels_results = await asyncio.gather(*(search_one(req) for req in hotel_request))
+
+        if not hotels_results:
             raise HTTPException(status_code=404, detail="No hotels found")
-
-        # Format hotel data for AI
-        hotels_text = format_travel_data("hotels", hotels)
-
-        # Get AI recommendation
-        ai_recommendation = await get_ai_recommendation("hotels", hotels_text)
+        
+        # Format hotel data for AI and get recommendations for each location
+        ai_hotel_recommendations = []
+        all_hotels = []
+        hotels_grouped = []
+        for idx, hotels in enumerate(hotels_results):
+            # Handle errors
+            if isinstance(hotels, dict) and "error" in hotels:
+                raise HTTPException(status_code=400, detail=hotels["error"])
+            if not hotels:
+                raise HTTPException(status_code=404, detail="No hotels found")
+            hotels_grouped.append(HotelsGrouped(
+                location=hotel_request[idx].location,
+                check_in_date=hotel_request[idx].check_in_date,
+                check_out_date=hotel_request[idx].check_out_date,
+                hotels=hotels
+            ))
+            all_hotels.extend(hotels)
+            hotels_text = format_travel_data("hotels", hotels)
+            ai_hotel_recommendations.append(await get_ai_recommendation("hotels", hotels_text))
 
         # Return response
         return AIResponse(
-            hotels=hotels,
-            ai_hotel_recommendation=ai_recommendation
+            hotels=all_hotels,
+            hotels_grouped=hotels_grouped,
+            ai_hotel_recommendations=ai_hotel_recommendations
         )
     except HTTPException:
         # Re-raise HTTP exceptions to preserve status codes
@@ -105,16 +125,22 @@ async def get_hotel_recommendations(hotel_request: HotelRequest):
 
 
 @app.post("/complete_search/", response_model=AIResponse)
-async def complete_travel_search(flight_request: FlightRequest, hotel_request: Optional[HotelRequest] = None):
-    """Search for flights and hotels concurrently and get AI recommendations for both."""
+async def complete_travel_search(
+    flight_request: FlightRequest,
+    hotel_request: Optional[List[HotelRequest]] = Body(default=None)
+):
+    """
+    Search for flights and multiple hotels concurrently and get AI recommendations for both.
+    hotel_request: List of HotelRequest objects (one per location)
+    """
     try:
         # If hotel request is not provided, create one from flight request
-        if hotel_request is None:
-            hotel_request = HotelRequest(
+        if not hotel_request:
+            hotel_request = [HotelRequest(
                 location=flight_request.destination,
                 check_in_date=flight_request.outbound_date,
                 check_out_date=flight_request.return_date
-            )
+            )]
 
         # Run flight and hotel searches concurrently
         flight_task = asyncio.create_task(get_flight_recommendations(flight_request))
@@ -151,8 +177,9 @@ async def complete_travel_search(flight_request: FlightRequest, hotel_request: O
         return AIResponse(
             flights=flight_results.flights,
             hotels=hotel_results.hotels,
+            hotels_grouped=hotel_results.hotels_grouped,
             ai_flight_recommendation=flight_results.ai_flight_recommendation,
-            ai_hotel_recommendation=hotel_results.ai_hotel_recommendation,
+            ai_hotel_recommendations=hotel_results.ai_hotel_recommendations,
             itinerary=itinerary
         )
     except Exception as e:
