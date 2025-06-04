@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -13,6 +14,7 @@ from common import (
     generate_itinerary, 
     get_ai_recommendation, 
     search_flights, 
+    search_google_hotels,  
     search_booking_hotels, 
     strip_code_fence
 )
@@ -70,8 +72,11 @@ async def get_flight_recommendations(flight_request: FlightRequest):
 async def get_hotel_recommendations(hotel_request: HotelRequest):
     """Search hotels and get AI recommendation."""
     try:
-        # Fetch hotel data
-        hotels = await search_booking_hotels(hotel_request)
+        hotel_provider = os.getenv("HOTEL_PROVIDER", "booking").lower()
+        if hotel_provider == "google":
+            hotels = await search_google_hotels(hotel_request)
+        else:
+            hotels = await search_booking_hotels(hotel_request)
 
         # Handle errors
         if isinstance(hotels, dict) and "error" in hotels:
