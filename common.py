@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+from apify_client import ApifyClientAsync
 from fastapi import HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -12,6 +13,7 @@ import re
 
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
+APIFY_API_KEY = os.getenv("APIFY_API_KEY")
 
 # Initialize Logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -114,6 +116,34 @@ async def run_google_search(params):
     except Exception as e:
         logger.exception(f"SerpAPI search error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search API error: {str(e)}")
+
+
+# ==============================================
+# 🏨 Fetch Hotels from Booking.com
+# ==============================================
+async def run_apify_booking_search(params):
+    if not APIFY_API_KEY:
+        logger.error("APIFY_API_KEY environment variable is not set.")
+        raise HTTPException(status_code=422, detail="APIFY API key is not configured.")
+    try:
+        apify_client = ApifyClientAsync(APIFY_API_KEY)
+
+        # Start an Actor and wait for it to finish.
+        actor_client = apify_client.actor('voyager/fast-booking-scraper')
+        call_result = await actor_client.call(run_input=params)
+
+        if call_result is None:
+            logger.error(f"Actor run failed. Params: {params}")
+            print('Actor run failed.')
+            return []
+
+        # Fetch results from the Actor run's default dataset.
+        dataset_client = apify_client.dataset(call_result['defaultDatasetId'])
+        list_items_result = await dataset_client.list_items()
+        return list_items_result.items
+    except Exception as e:
+        logger.exception(f"Apify Client error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Apify Client error: {str(e)}")
 
 
 async def search_flights(flight_request: FlightRequest):
@@ -300,6 +330,59 @@ async def search_google_hotels(hotel_request: HotelRequest):
     return formatted_hotels
 
 
+async def search_booking_hotels(hotel_request: HotelRequest):
+    """Fetch hotel information from Apify - Booking.com."""
+    logger.info(f"Searching hotels for: {hotel_request.location}")
+
+    check_in_date = datetime.strptime(hotel_request.check_in_date, "%Y-%m-%d")
+    check_out_date = datetime.strptime(hotel_request.check_out_date, "%Y-%m-%d")
+    date_diff = check_out_date - check_in_date
+
+    if date_diff.days <= 0:
+        logger.error("Check out date is less than or equal to check in date")
+        return []
+
+    params = {
+        "search": hotel_request.location,
+        "maxItems": 10,
+        "propertyType": "Hostels",
+        "sortBy": "distance_from_search",
+        "minScore": "8",
+        "starsCountFilter": "any",
+        "currency": "INR",
+        "language": "en-gb",
+        "checkIn": hotel_request.check_in_date,
+        "checkOut": hotel_request.check_out_date,
+        "rooms": 1,
+        "adults": 1,
+        "children": 0,
+        "minMaxPrice": "0-999999"
+    }
+
+    hotel_results = await run_apify_booking_search(params)
+
+    if not hotel_results:
+        logger.warning("No hotels found in search results")
+        return []
+
+    formatted_hotels = []
+    for hotel in hotel_results:
+        try:
+            formatted_hotels.append(HotelInfo(
+                name=hotel.get("name", "Unknown Hotel"),
+                price=round(float(hotel.get("price", 0.0)) / date_diff.days),
+                rating=float(hotel.get("rating", 0.0)),
+                location=hotel.get("address", "N/A"),
+                link=hotel.get("url", "N/A")
+            ))
+        except Exception as e:
+            logger.warning(f"Error formatting hotel data: {str(e)}")
+            # Continue with next hotel rather than failing completely
+
+    logger.info(f"Found {len(formatted_hotels)} hotels")
+    return formatted_hotels
+
+
 # ==============================================
 # 🔄 Format Data for AI
 # ==============================================
@@ -342,7 +425,7 @@ def format_travel_data(data_type, data):
             formatted_text += (
                 f"**Hotel {i + 1}:**\n"
                 f"🏨 **Name:** {hotel.name}\n"
-                f"💰 **Price:** ${hotel.price}\n"
+                f"💰 **Price:** ₹{hotel.price}\n"
                 f"⭐ **Rating:** {hotel.rating}\n"
                 f"📍 **Location:** {hotel.location}\n"
                 f"🔗 **More Info:** [Link]({hotel.link})\n\n"

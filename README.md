@@ -16,6 +16,7 @@ The system leverages:
 - **Gemini 2.0 LLM**: Powers the intelligence behind each agent
 - **CrewAI**: Coordinates the multi-agent workflow
 - **SerpAPI**: Retrieves real-time flight and hotel data
+- **Apify**: Retrieves hotel data from booking.com
 - **FastAPI**: Handles backend API endpoints
 - **Angular**: Provides a user-friendly interface
 
@@ -27,7 +28,7 @@ The system leverages:
 - AI recommends the best flight based on cost-effectiveness and convenience
 
 ### 2. Hotel Recommendations
-- Searches real-time hotel availability from Google Hotels
+- Searches real-time hotel availability from Booking.com or Google Hotels
 - Filters based on location, budget, amenities, and user ratings
 - AI suggests the best hotel by analyzing factors like proximity to key locations
 
@@ -57,6 +58,7 @@ Changes were made to use Angular frontend instead of Streamlit.
 - Node.js (v18 or higher)
 - npm (v9 or higher)
 - SerpAPI key for fetching real-time flight and hotel data
+- Apify API key for fetching booking.com hotel data
 - Google Gemini API key for AI recommendations
 
 ### Setup
@@ -90,10 +92,12 @@ Changes were made to use Angular frontend instead of Streamlit.
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
    SERP_API_KEY=your_serpapi_key_here
+   APIFY_API_KEY=your_apify_key_here
    ```
 
 - Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/)
 - Get a SerpAPI key from [SerpAPI](https://serpapi.com/)
+- Get a Apify API key from [Apify](http://apify.com/)
 
 5. **Install Angular CLI globally:**
    ```bash
@@ -166,7 +170,7 @@ The application follows a modular architecture:
    - FastAPI setup with endpoints for flight search, hotel search, and itinerary generation
   
 2. **Data Retrieval**:
-   - Asynchronous functions connect to SerpAPI to fetch real-time flight and hotel data
+   - Asynchronous functions connect to SerpAPI and Apify to fetch real-time flight and hotel data
    - Response formatting and data validation using Pydantic models
 
 3. **AI Analysis**:
