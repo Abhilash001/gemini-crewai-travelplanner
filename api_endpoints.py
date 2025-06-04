@@ -14,7 +14,7 @@ from common import (
     generate_itinerary, 
     get_ai_recommendation, 
     search_flights, 
-    search_google_hotels,  
+    search_google_hotels, 
     search_booking_hotels, 
     strip_code_fence
 )
