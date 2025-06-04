@@ -253,7 +253,7 @@ async def search_flights(flight_request: FlightRequest):
     return formatted_flights
 
 
-async def search_hotels(hotel_request: HotelRequest):
+async def search_google_hotels(hotel_request: HotelRequest):
     """Fetch hotel information from SerpAPI."""
     logger.info(f"Searching hotels for: {hotel_request.location}")
 

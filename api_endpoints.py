@@ -13,7 +13,7 @@ from common import (
     generate_itinerary, 
     get_ai_recommendation, 
     search_flights, 
-    search_hotels, 
+    search_google_hotels, 
     strip_code_fence
 )
 
@@ -71,7 +71,7 @@ async def get_hotel_recommendations(hotel_request: HotelRequest):
     """Search hotels and get AI recommendation."""
     try:
         # Fetch hotel data
-        hotels = await search_hotels(hotel_request)
+        hotels = await search_google_hotels(hotel_request)
 
         # Handle errors
         if isinstance(hotels, dict) and "error" in hotels:
