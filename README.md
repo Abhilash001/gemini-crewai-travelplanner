@@ -41,7 +41,7 @@ The system leverages:
 - Generates a day-by-day itinerary with must-visit attractions, restaurant recommendations, and local transportation options
 
 ### 5. User-Friendly Interface
-- Streamlit provides an intuitive UI for inputting travel preferences
+- Angular provides an intuitive UI for inputting travel preferences
 - Interactive tabs for viewing flights, hotels, and AI recommendations
 - Downloadable formatted itinerary
 
@@ -109,7 +109,7 @@ Changes were made to use Angular frontend instead of Streamlit.
 
 1. Start the FastAPI backend
    ```bash
-   python gemini2_travel_v2.py
+   python backend.py
    ```
 
 2. In a new terminal window, navigate to UI folder and start the Angular development server:
@@ -149,8 +149,9 @@ The application uses a collaborative AI system with specialized agents:
 
 ### Project Structure
 
-- `gemini2_travel_v2.py`: FastAPI backend application with API endpoints, data fetching, and AI agent coordination
-- `gemini2_travel_v2_frontend.py`: Streamlit frontend interface for user interaction
+- `backend.py`: Uvicorn backend application
+- `common.py`: Common file with variables and methods for utils, data fetching, and AI agents
+- `api_endpoints.py`: FastAPI backend application with API endpoints
 - `requirements.txt`: Project dependencies
 - `images/`: Directory containing demonstration images and GIFs
   - `travelplanner.webp`: Static screenshot of the application interface
@@ -174,7 +175,7 @@ The application follows a modular architecture:
    - Gemini LLM powers the intelligence of each agent
 
 4. **Frontend Interface**:
-   - Streamlit UI with interactive forms and tabs
+   - Angular UI with interactive forms and tabs
    - Real-time data display with filtering options
    - Downloadable itinerary generation
 
