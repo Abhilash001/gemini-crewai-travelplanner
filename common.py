@@ -401,8 +401,7 @@ def format_travel_data(data_type, data):
         formatted_text = "✈️ **Available round-trip flight options**:\n\n"
         for i, flight in enumerate(data):
             formatted_text += (
-                f"**Option {i + 1}:**\n"
-                f"**Departure Flight:**\n"
+                f"**Departure Flight {i + 1}:**\n"
                 f"✈️ **Airline:** {flight.airline}\n"
                 f"💰 **Price:** ₹{flight.price}\n"
                 f"⏱️ **Duration:** {flight.duration}\n"
@@ -427,13 +426,24 @@ def format_travel_data(data_type, data):
             formatted_text += "\n"
     elif data_type == "hotels":
         formatted_text = "🏨 **Available Hotel Options**:\n\n"
-        for i, hotel in enumerate(data):
+        for i, item in enumerate(data):
+            # Support both old and new format for backward compatibility
+            if isinstance(item, dict) and "hotel" in item:
+                hotel = item["hotel"]
+                check_in = item.get("check_in", "N/A")
+                check_out = item.get("check_out", "N/A")
+                location = item.get("location", "N/A")
+            else:
+                hotel = item
+                check_in = check_out = location = "N/A"
             formatted_text += (
                 f"**Hotel {i + 1}:**\n"
                 f"🏨 **Name:** {hotel.name}\n"
                 f"💰 **Price:** ₹{hotel.price}\n"
                 f"⭐ **Rating:** {hotel.rating}\n"
-                f"📍 **Location:** {hotel.location}\n"
+                f"📍 **Location:** {hotel.location if location == 'N/A' else location}\n"
+                f"🗓️ **Check-in:** {check_in}\n"
+                f"🗓️ **Check-out:** {check_out}\n"
                 f"🔗 **More Info:** [Link]({hotel.link})\n\n"
             )
     else:
@@ -456,7 +466,12 @@ async def get_ai_recommendation(data_type, formatted_data):
         goal = "Analyze round-trip flight options and recommend the best combination considering price, duration, stops, and overall convenience for both departure and return flights."
         backstory = f"AI expert that provides in-depth analysis comparing round-trip flight options based on multiple factors."
         description = """
-        Recommend the best round-trip flight combination from the available options, based on the details provided below:
+        Recommend the best round-trip flight combination from the available options, based on the details provided below.
+
+        **At the start of your response, clearly state the recommended departure flight in the format:**
+        `Recommended Departure Flight: <number>`
+        **For the selected departure flight, clearly state the recommended return flight in the next line in the format:**
+        `Recommended Return Flight: <number>`
 
         **Reasoning for Recommendation:**
         - **💰 Price:** Explain why this round-trip offers the best value.
@@ -475,6 +490,9 @@ async def get_ai_recommendation(data_type, formatted_data):
         backstory = f"AI expert that provides in-depth analysis comparing hotel options based on multiple factors."
         description = """
         Based on the following analysis, generate a detailed recommendation for the best hotel. Your response should include clear reasoning based on price, rating, location, and amenities.
+
+        **At the start of your response, clearly state the recommended hotel in the format:**
+        `Recommended Hotel: <number>`
 
         **🏆 AI Hotel Recommendation**
         We recommend the best hotel based on the following analysis:
@@ -613,4 +631,81 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
 # After getting the itinerary string from the LLM
 def strip_code_fence(md: str) -> str:
     return re.sub(r'^```(?:markdown)?\s*([\s\S]*?)```$', r'\1', md.strip(), flags=re.MULTILINE)
+
+def extract_recommended_hotel_index(recommendation_text):
+    """
+    Extracts the recommended option index from the AI recommendation text.
+    Looks for lines like 'Recommended Option: 2' or 'Recommended Hotel: 1'.
+    Returns a zero-based index, or 0 if not found.
+    """
+    pattern = r"Recommended Hotel:\s*(\d+)"
+    match = re.search(pattern, recommendation_text, re.IGNORECASE)
+    if match:
+        return int(match.group(1)) - 1
+    return 0
+
+def extract_recommended_flight_indices(recommendation_text):
+    """
+    Extracts the recommended departure and return flight indices from the AI recommendation text.
+    Returns (departure_index, return_index), both zero-based. If not found, defaults to 0.
+    """
+    dep_match = re.search(r"Recommended Departure Flight:\s*(\d+)", recommendation_text, re.IGNORECASE)
+    ret_match = re.search(r"Recommended Return Flight:\s*(\d+)", recommendation_text, re.IGNORECASE)
+    dep_idx = int(dep_match.group(1)) - 1 if dep_match else 0
+    ret_idx = int(ret_match.group(1)) - 1 if ret_match else 0
+    return dep_idx, ret_idx
+
+def format_selected_travel_data(data_type, data):
+    """Format only the selected flight(s) or hotel(s) for itinerary generation."""
+    if not data:
+        return f"No {data_type} selected."
+
+    if data_type == "flights":
+        flight = data[0]
+        text = (
+            f"✈️ **Selected Departure Flight**\n"
+            f"- Airline: {flight.airline}\n"
+            f"- Duration: {flight.duration}\n"
+            f"- Stops: {flight.stops}\n"
+            f"- Departure: {flight.departure}\n"
+            f"- Arrival: {flight.arrival}\n"
+            f"- Class: {flight.travel_class}\n"
+        )
+        ret = flight.return_flights[0]
+        text += (
+            f"\n↩️ **Selected Return Flight**\n"
+            f"- Airline: {ret['airline']}\n"
+            f"- Duration: {ret['duration']}\n"
+            f"- Stops: {ret['stops']}\n"
+            f"- Departure: {ret['departure']}\n"
+            f"- Arrival: {ret['arrival']}\n"
+            f"- Class: {ret['travel_class']}\n"
+        )
+        text += (f"Total round-trip Price:  ₹{ret['price'] if ret['price'] > 0 else flight.price}\n")
+        return text.strip()
+
+    elif data_type == "hotels":
+        text = ""
+        for i, item in enumerate(data):
+            if isinstance(item, dict) and "hotel" in item:
+                hotel = item["hotel"]
+                check_in = item.get("check_in", "N/A")
+                check_out = item.get("check_out", "N/A")
+                location = item.get("location", "N/A")
+            else:
+                hotel = item
+                check_in = check_out = location = "N/A"
+            text += (
+                f"🏨 **Selected Hotel {i+1}**\n"
+                f"- Name: {hotel.name}\n"
+                f"- Price: ₹{hotel.price} per night\n"
+                f"- Rating: {hotel.rating}\n"
+                f"- Location: {hotel.location if location == 'N/A' else location}\n"
+                f"- Check-in: {check_in}\n"
+                f"- Check-out: {check_out}\n"
+                f"- More Info: {hotel.link}\n\n"
+            )
+        return text.strip()
+    else:
+        return "Invalid data type."
 

@@ -11,6 +11,9 @@ from common import (
     HotelsGrouped, 
     ItineraryRequest, 
     logger, 
+    extract_recommended_flight_indices,
+    extract_recommended_hotel_index,
+    format_selected_travel_data, 
     format_travel_data, 
     generate_itinerary, 
     get_ai_recommendation, 
@@ -158,17 +161,55 @@ async def complete_travel_search(
             logger.error(f"Hotel search failed: {str(hotel_results)}")
             hotel_results = AIResponse(hotels=[], ai_hotel_recommendation="Could not retrieve hotels.")
 
-        # Format data for itinerary generation
-        flights_text = format_travel_data("flights", flight_results.flights)
-        hotels_text = format_travel_data("hotels", hotel_results.hotels)
+        # --- NEW: Use only recommended flight/hotel for itinerary ---
+        dep_idx, ret_idx = extract_recommended_flight_indices(flight_results.ai_flight_recommendation)
 
-        # Generate itinerary if both searches were successful
+        # Select the recommended departure and return flight
+        selected_flight = None
+        selected_return_flight = None
+        if flight_results.flights and 0 <= dep_idx < len(flight_results.flights):
+            selected_flight = flight_results.flights[dep_idx]
+            if selected_flight.return_flights and 0 <= ret_idx < len(selected_flight.return_flights):
+                selected_return_flight = selected_flight.return_flights[ret_idx]
+        if selected_flight:
+            flight_info = [selected_flight]
+            if selected_return_flight:
+                # Replace return_flights with only the selected one for formatting
+                flight_info[0] = flight_info[0].model_copy(update={"return_flights": [selected_return_flight]})
+            selected_flights_text = format_selected_travel_data("flights", flight_info)
+        else:
+            selected_flights_text = format_travel_data("flights", flight_results.flights[:1])
+
+        # --- NEW: Collect all recommended hotels from each group ---
+        # Instead of just a flat list, build a list of (hotel, check_in, check_out)
+        recommended_hotels = []
+        for idx, hotels_group in enumerate(hotel_results.hotels_grouped or []):
+            ai_reco = hotel_results.ai_hotel_recommendations[idx] if hotel_results.ai_hotel_recommendations and idx < len(hotel_results.ai_hotel_recommendations) else ""
+            hotel_idx = extract_recommended_hotel_index(ai_reco)
+            if hotels_group.hotels and 0 <= hotel_idx < len(hotels_group.hotels):
+                recommended_hotels.append({
+                    "hotel": hotels_group.hotels[hotel_idx],
+                    "check_in": hotels_group.check_in_date,
+                    "check_out": hotels_group.check_out_date,
+                    "location": hotels_group.location
+                })
+            elif hotels_group.hotels:
+                recommended_hotels.append({
+                    "hotel": hotels_group.hotels[0],
+                    "check_in": hotels_group.check_in_date,
+                    "check_out": hotels_group.check_out_date,
+                    "location": hotels_group.location
+                })
+
+        selected_hotels_text = format_selected_travel_data("hotels", recommended_hotels)
+
+        # Generate itinerary using only the recommended options
         itinerary = ""
-        if flight_results.flights and hotel_results.hotels:
+        if selected_flight and recommended_hotels:
             itinerary = await generate_itinerary(
                 destination=flight_request.destination,
-                flights_text=flights_text,
-                hotels_text=hotels_text,
+                flights_text=selected_flights_text,
+                hotels_text=selected_hotels_text,
                 check_in_date=flight_request.outbound_date,
                 check_out_date=flight_request.return_date
             )
