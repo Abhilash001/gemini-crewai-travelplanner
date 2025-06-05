@@ -350,7 +350,7 @@ async def search_booking_hotels(hotel_request: HotelRequest):
 
     params = {
         "search": hotel_request.location,
-        "maxItems": 10,
+        "maxItems": 5,
         "propertyType": "Hostels",
         "sortBy": "distance_from_search",
         "minScore": "8",
