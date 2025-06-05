@@ -107,8 +107,8 @@ export class TravelPlannerComponent implements OnInit {
 
   constructor(private fb: FormBuilder, private http: HttpClient) {
     this.travelForm = this.fb.group({
-      origin: ['ATL', Validators.required],
-      destination: ['LAX', Validators.required],
+      origin: ['BOM', Validators.required],
+      destination: ['NRT', Validators.required],
       outboundDate: [this.getTomorrowDate(), Validators.required],
       returnDate: [this.getNextWeekDate(), Validators.required],
       location: [''],

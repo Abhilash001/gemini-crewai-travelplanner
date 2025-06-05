@@ -45,7 +45,7 @@ This is an Angular 19 conversion of the Streamlit travel planner application. It
 The application expects a backend API running on `http://localhost:8000` with the following endpoints:
 
 - `POST /search_flights/` - Flight search
-- `POST /search_hotels/` - Hotel search  
+- `POST /search_hotels/` - Hotels search  
 - `POST /complete_search/` - Combined search with itinerary
 - `POST /generate_itinerary/` - Generate travel itinerary
 
@@ -54,8 +54,8 @@ The application expects a backend API running on `http://localhost:8000` with th
 **Flight Search:**
 ```json
 {
-  "origin": "ATL",
-  "destination": "LAX", 
+  "origin": "BOM",
+  "destination": "NRT", 
   "outbound_date": "2025-06-03",
   "return_date": "2025-06-10"
 }
@@ -63,27 +63,31 @@ The application expects a backend API running on `http://localhost:8000` with th
 
 **Hotel Search:**
 ```json
-{
-  "location": "LAX",
-  "check_in_date": "2025-06-03", 
-  "check_out_date": "2025-06-10"
-}
+[
+  {
+    "location": "NRT",
+    "check_in_date": "2025-06-03", 
+    "check_out_date": "2025-06-10"
+  }
+]
 ```
 
 **Complete Search:**
 ```json
 {
   "flight_request": {
-    "origin": "ATL",
-    "destination": "LAX",
+    "origin": "BOM",
+    "destination": "NRT",
     "outbound_date": "2025-06-03", 
     "return_date": "2025-06-10"
   },
-  "hotel_request": {
-    "location": "LAX",
-    "check_in_date": "2025-06-03",
-    "check_out_date": "2025-06-10"  
-  }
+  "hotel_request": [
+    {
+      "location": "NRT",
+      "check_in_date": "2025-06-03", 
+      "check_out_date": "2025-06-10"
+    }
+  ]
 }
 ```
 
@@ -139,8 +143,8 @@ Form validation rules can be modified in the component constructor:
 
 ```typescript
 this.travelForm = this.fb.group({
-  origin: ['ATL', [Validators.required, Validators.minLength(3)]],
-  destination: ['LAX', [Validators.required, Validators.minLength(3)]],
+  origin: ['BOM', [Validators.required, Validators.minLength(3)]],
+  destination: ['NRT', [Validators.required, Validators.minLength(3)]],
   // ... other fields
 });
 ```
