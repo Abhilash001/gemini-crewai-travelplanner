@@ -631,10 +631,9 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             return crew_results.get("AI Travel Planner", "No itinerary available.")
         else:
             return str(crew_results)
-
     except Exception as e:
         logger.exception(f"Error generating itinerary: {str(e)}")
-        return "Unable to generate itinerary due to an error. Please try again later."
+        raise
 
 
 # After getting the itinerary string from the LLM

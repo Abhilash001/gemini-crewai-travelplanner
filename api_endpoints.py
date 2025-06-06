@@ -251,6 +251,9 @@ async def get_itinerary(itinerary_request: ItineraryRequest):
         itinerary = strip_code_fence(itinerary)
 
         return AIResponse(itinerary=itinerary)
+    except ValueError as e:
+        logger.exception(f"Itinerary generation error: {str(e)}")
+        raise HTTPException(status_code=422, detail=f"Itinerary generation error: {str(e)}")
     except Exception as e:
         logger.exception(f"Itinerary generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Itinerary generation error: {str(e)}")
