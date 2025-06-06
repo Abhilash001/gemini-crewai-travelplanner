@@ -264,6 +264,26 @@ export class TravelPlannerComponent implements OnInit {
     }
   }
 
+  downloadItineraryPdf() {
+    if (!this.searchResults?.itinerary) return;
+    const markdown = this.itineraryMarkdown;
+    const title = `travel_itinerary_${this.travelForm.get('destination')?.value}_${this.travelForm.get('outboundDate')?.value}`;
+    this.http.post(
+      `${this.API_BASE_URL}/generate_pdf/`,
+      { markdown, title },
+      { responseType: 'blob' }
+    ).subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    });
+  }
+
   get itineraryMarkdown(): string {
     if (!this.searchResults?.itinerary) return '';
     // Remove ```markdown ... ```

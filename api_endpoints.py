@@ -1,8 +1,12 @@
 import asyncio
 import os
-from fastapi import FastAPI, HTTPException, Body
+import re
+from fastapi import FastAPI, HTTPException, Response, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
+from pydantic import BaseModel
+import pdfkit
+import markdown as md
 
 from common import (
     AIResponse, 
@@ -246,4 +250,39 @@ async def get_itinerary(itinerary_request: ItineraryRequest):
     except Exception as e:
         logger.exception(f"Itinerary generation error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Itinerary generation error: {str(e)}")
+
+
+class MarkdownToPdfRequest(BaseModel):
+    markdown: str
+    title: str = "Travel Itinerary"
+
+@app.post("/generate_pdf/")
+def generate_pdf(req: MarkdownToPdfRequest):
+    html_content = md.markdown(req.markdown, extensions=["extra", "smarty"])
+    html_content = re.sub(
+        r'([\U0001F300-\U0001FAFF\U00002600-\U000026FF\U00002700-\U000027BF\U0001F1E6-\U0001F1FF])',
+        r'<span class="emoji">\1</span>',
+        html_content
+    )
+    html_full = f"""
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>{req.title}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@400" rel="stylesheet">
+      <style>
+        body {{ background: #fff; color: #222; font-family: Arial, sans-serif; margin: 2em; }}
+        /* Only apply Noto Emoji to emoji characters */
+        .emoji {{ font-family: 'Noto Emoji', Arial, sans-serif !important; }}
+      </style>
+    </head>
+    <body>{html_content}</body>
+    </html>
+    """
+    wkhtmltopdf_path = os.path.join(os.path.dirname(__file__), 'wkhtmltox', 'wkhtmltopdf.exe')
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+    pdf = pdfkit.from_string(html_full, False, configuration=config)
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename={req.title.replace(' ', '_')}.pdf"
+    })
 

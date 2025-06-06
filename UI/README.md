@@ -48,6 +48,7 @@ The application expects a backend API running on `http://localhost:8000` with th
 - `POST /search_hotels/` - Hotels search  
 - `POST /complete_search/` - Combined search with itinerary
 - `POST /generate_itinerary/` - Generate travel itinerary
+- `POST /generate_pdf/` - Download itinerary in PDF format
 
 ### API Request Formats
 
@@ -90,6 +91,11 @@ The application expects a backend API running on `http://localhost:8000` with th
   ]
 }
 ```
+
+## PDF Export Requirements
+
+- `pdfkit` and `markdown` Python packages must be installed (see backend `requirements.txt`)
+- [wkhtmltopdf](https://wkhtmltopdf.org/downloads.html) binary must be present at `gemini-crewai-travelplanner/wkhtmltox/wkhtmltopdf.exe` for PDF export to work
 
 ## Project Structure
 
