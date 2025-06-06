@@ -177,15 +177,45 @@ export class TravelPlannerComponent implements OnInit {
 
     const formValues = this.travelForm.value;
 
-    // Validation
+    // Flight date validation
     if (new Date(formValues.outboundDate) >= new Date(formValues.returnDate)) {
       this.errorMessage = 'Return date must be after departure date.';
       return;
     }
 
-    if (new Date(formValues.checkInDate) >= new Date(formValues.checkOutDate)) {
-      this.errorMessage = 'Check-out date must be after check-in date.';
-      return;
+    // Hotel date validation
+    const hotelArr = this.hotelLocations.controls;
+    if (hotelArr.length > 0) {
+      // 1. First hotel check-in = Departure flight date
+      const firstCheckIn = hotelArr[0].get('checkInDate')?.value;
+      if (firstCheckIn !== formValues.outboundDate) {
+        this.errorMessage = 'First hotel check-in date must match the departure flight date.';
+        return;
+      }
+      // 2. Last hotel check-out = Return flight date
+      const lastCheckOut = hotelArr[hotelArr.length - 1].get('checkOutDate')?.value;
+      if (lastCheckOut !== formValues.returnDate) {
+        this.errorMessage = 'Last hotel check-out date must match the return flight date.';
+        return;
+      }
+      // 3. All nth hotel checkout = (n+1)th hotel check-in
+      for (let i = 0; i < hotelArr.length - 1; i++) {
+        const currCheckOut = hotelArr[i].get('checkOutDate')?.value;
+        const nextCheckIn = hotelArr[i + 1].get('checkInDate')?.value;
+        if (currCheckOut !== nextCheckIn) {
+          this.errorMessage = `Hotel ${i + 1} check-out date must match Hotel ${i + 2} check-in date.`;
+          return;
+        }
+      }
+      // Each hotel: check-in < check-out
+      for (let i = 0; i < hotelArr.length; i++) {
+        const checkIn = hotelArr[i].get('checkInDate')?.value;
+        const checkOut = hotelArr[i].get('checkOutDate')?.value;
+        if (new Date(checkIn) >= new Date(checkOut)) {
+          this.errorMessage = `Hotel ${i + 1} check-out date must be after check-in date.`;
+          return;
+        }
+      }
     }
 
     this.errorMessage = '';
