@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from fastapi import FastAPI, HTTPException, Response, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
@@ -258,13 +259,21 @@ class MarkdownToPdfRequest(BaseModel):
 @app.post("/generate_pdf/")
 def generate_pdf(req: MarkdownToPdfRequest):
     html_content = md.markdown(req.markdown, extensions=["extra", "smarty"])
+    html_content = re.sub(
+        r'([\U0001F300-\U0001FAFF\U00002600-\U000026FF\U00002700-\U000027BF\U0001F1E6-\U0001F1FF])',
+        r'<span class="emoji">\1</span>',
+        html_content
+    )
     html_full = f"""
     <html>
     <head>
       <meta charset="utf-8">
       <title>{req.title}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@400" rel="stylesheet">
       <style>
         body {{ background: #fff; color: #222; font-family: Arial, sans-serif; margin: 2em; }}
+        /* Only apply Noto Emoji to emoji characters */
+        .emoji {{ font-family: 'Noto Emoji', Arial, sans-serif !important; }}
       </style>
     </head>
     <body>{html_content}</body>
