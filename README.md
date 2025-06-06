@@ -61,6 +61,9 @@ Changes were made to use Angular frontend instead of Streamlit.
 - Apify API key for fetching booking.com hotel data
 - Google Gemini API key for AI recommendations
 
+This project uses [pdfkit](https://pypi.org/project/pdfkit/) and [markdown](https://pypi.org/project/Markdown/) for server-side PDF generation from markdown.
+[wkhtmltopdf](https://wkhtmltopdf.org/downloads.html) binary must be present at `gemini-crewai-travelplanner/wkhtmltox/wkhtmltopdf.exe` for PDF export to work.
+
 ### Setup
 
 1. Clone the repository
