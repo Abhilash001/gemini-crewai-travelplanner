@@ -320,20 +320,20 @@
         <div *ngIf="activeTab === 'recommendations'" class="recommendations-section">
           <div *ngIf="searchMode !== 'hotels' && searchResults.ai_flight_recommendation" class="recommendation-card">
             <h3>✈️ AI Flight Recommendation</h3>
-            <div markdown [data]="searchResults.ai_flight_recommendation"></div>
+            <div class="itinerary-content markdown-body" markdown [data]="searchResults.ai_flight_recommendation"></div>
           </div>
           <!-- Show all hotel recommendations -->
           <ng-container *ngIf="searchMode !== 'flights' && searchResults.ai_hotel_recommendations">
             <div *ngFor="let rec of searchResults.ai_hotel_recommendations; let i = index" class="recommendation-card">
               <h3>🏨 AI Hotel Recommendation for Location {{i + 1}}</h3>
-              <div markdown [data]="rec"></div>
+              <div class="itinerary-content markdown-body" markdown [data]="rec"></div>
             </div>
           </ng-container>
         </div>
         <!-- Itinerary Tab -->
         <div *ngIf="activeTab === 'itinerary' && searchMode === 'complete'" class="itinerary-section">
           <h3>📅 Your Travel Itinerary</h3>
-          <div class="itinerary-content" markdown [data]="itineraryMarkdown"></div>
+          <div class="itinerary-content markdown-body" markdown [data]="itineraryMarkdown"></div>
           <button class="download-btn" (click)="downloadItinerary()">📥 Download Itinerary</button>
           <button class="download-btn" style="margin-left:10px;" (click)="downloadItineraryPdf()">🖨️ Download as PDF</button>
         </div>
