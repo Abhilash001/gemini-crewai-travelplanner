@@ -87,6 +87,14 @@
             <button type="button" class="select-btn" (click)="addHotelLocation()">+ Add Another Location</button>
           </div>
         </div>
+        <!-- Itinerary Instructions -->
+        <div class="form-section">
+          <h2>📋 Itinerary Instructions</h2>
+          <div class="form-group">
+            <label>Special Instructions for Itinerary (optional)</label>
+            <textarea formControlName="specialInstructions" class="form-control" rows="3" placeholder="e.g. Prefer vegetarian food, avoid museums, include shopping, etc."></textarea>
+          </div>
+        </div>
       </div>
       <div class="submit-section">
         <button type="submit" class="search-btn" [disabled]="loading || travelForm.invalid">

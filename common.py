@@ -556,7 +556,7 @@ async def get_ai_recommendation(data_type, formatted_data):
         return f"Unable to generate {data_type} recommendation due to an error."
 
 
-async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date):
+async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date, special_instructions=None):
     """Generate a detailed travel itinerary based on flight and hotel information."""
     try:
         # Convert the string dates to datetime objects
@@ -590,6 +590,8 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
 
             **Travel Dates**: {check_in_date} to {check_out_date} ({days} days)
 
+            {"**Special Instructions:** " + special_instructions if special_instructions else ""}
+
             The itinerary should include:
             - Flight arrival and departure information
             - Hotel check-in and check-out details
@@ -601,7 +603,6 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
                 - Table will have a category column and a column for estimated per person cost for each category. 
                 - Categories: Flight, Accomodation, Food, Transport (Train/Bus/etc.), Attractions & Activities, Visa Fees (for Indian National), Miscellaneous and Total.
                 - All costs should be in INR (₹)
-
 
             📝 **Format Requirements**:
             - Use markdown formatting with clear headings (# for main headings, ## for days, ### for sections)

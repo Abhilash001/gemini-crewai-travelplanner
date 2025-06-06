@@ -134,7 +134,8 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
 @app.post("/complete_search/", response_model=AIResponse)
 async def complete_travel_search(
     flight_request: FlightRequest,
-    hotel_request: Optional[List[HotelRequest]] = Body(default=None)
+    hotel_request: Optional[List[HotelRequest]] = Body(default=None),
+    special_instructions: Optional[str] = Body(default=None)
 ):
     """
     Search for flights and multiple hotels concurrently and get AI recommendations for both.
@@ -215,7 +216,8 @@ async def complete_travel_search(
                 flights_text=selected_flights_text,
                 hotels_text=selected_hotels_text,
                 check_in_date=flight_request.outbound_date,
-                check_out_date=flight_request.return_date
+                check_out_date=flight_request.return_date,
+                special_instructions=special_instructions
             )
 
         # Combine results

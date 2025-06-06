@@ -113,7 +113,8 @@ export class TravelPlannerComponent implements OnInit {
       returnDate: [this.getNextWeekDate(), Validators.required],
       location: [''],
       checkInDate: [this.getTomorrowDate(), Validators.required],
-      checkOutDate: [this.getNextWeekDate(), Validators.required]
+      checkOutDate: [this.getNextWeekDate(), Validators.required],
+      specialInstructions: ['']
     });
   }
 
@@ -210,10 +211,13 @@ export class TravelPlannerComponent implements OnInit {
 
     switch (this.searchMode) {
       case 'complete':
-        const completeData = {
+        const completeData: any = {
           flight_request: flightData,
           hotel_request: hotelRequests
         };
+        if (formValues.specialInstructions && formValues.specialInstructions.trim() !== '') {
+          completeData.special_instructions = formValues.specialInstructions;
+        }
         request = this.http.post<SearchResponse>(`${this.API_BASE_URL}/complete_search/`, completeData);
         break;
       case 'flights':
