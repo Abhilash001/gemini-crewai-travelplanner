@@ -80,7 +80,9 @@ async def get_flight_recommendations(flight_request: FlightRequest):
 async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] = Body(default=None)):
     """Search hotels and get AI recommendation."""
     try:
-       # Run hotel searches for each location
+        if not hotel_request or len(hotel_request) == 0:
+            raise HTTPException(status_code=400, detail="No hotel requests provided")
+        # Run hotel searches for each location
         hotel_provider = os.getenv("HOTEL_PROVIDER", "booking").lower()
         semaphore = asyncio.Semaphore(2)  # Limit to 2 concurrent searches
 
