@@ -470,8 +470,10 @@ async def get_ai_recommendation(data_type, formatted_data):
 
         **At the start of your response, clearly state the recommended departure flight in the format:**
         `Recommended Departure Flight: <number>`
+        `Recommended Departure Flight Name: <flight name>`
         **For the selected departure flight, clearly state the recommended return flight in the next line in the format:**
         `Recommended Return Flight: <number>`
+        `Recommended Return Flight Name: <flight name>`
 
         **Reasoning for Recommendation:**
         - **💰 Price:** Explain why this round-trip offers the best value.
@@ -493,6 +495,7 @@ async def get_ai_recommendation(data_type, formatted_data):
 
         **At the start of your response, clearly state the recommended hotel in the format:**
         `Recommended Hotel: <number>`
+        `Recommended Hotel Name: <hotel name>`
 
         **🏆 AI Hotel Recommendation**
         We recommend the best hotel based on the following analysis:
@@ -594,6 +597,11 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             - Must-visit attractions and estimated visit times
             - Restaurant recommendations for meals
             - Tips for local transportation
+            - A 'Estimated Trip Costs' table at the end of the itinerary
+                - Table will have a category column and a column for estimated per person cost for each category. 
+                - Categories: Flight, Accomodation, Food, Transport (Train/Bus/etc.), Attractions & Activities, Visa Fees (for Indian National), Miscellaneous and Total.
+                - All costs should be in INR (₹)
+
 
             📝 **Format Requirements**:
             - Use markdown formatting with clear headings (# for main headings, ## for days, ### for sections)
@@ -603,7 +611,7 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             - Format the itinerary to be visually appealing and easy to read
             """,
             agent=analyze_agent,
-            expected_output="A well-structured, visually appealing itinerary in markdown format, including flight, hotel, and day-wise breakdown with emojis, headers, and bullet points."
+            expected_output="A well-structured, visually appealing itinerary in markdown format, including flight, hotel, day-wise breakdown with emojis, headers, and bullet points, and the Estimated Trip Costs table."
         )
 
         itinerary_planner_crew = Crew(
