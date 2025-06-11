@@ -711,6 +711,8 @@ async def plan_trip_agent(req: PlanTripRequest):
     Please:
     1. Suggest the best departure and arrival airports (IATA codes) for both cities.
     2. Suggest areas/neighborhoods to stay in, with check-in/check-out dates.
+       - For each area, ONLY provide the exact city, area, or landmark name that can be directly searched in Booking.com.
+       - DO NOT include any descriptions, explanations, or text in parentheses.
     3. Provide a rough day-wise plan with activities.
     4. Output in JSON as:
        {{

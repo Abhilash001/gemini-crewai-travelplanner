@@ -338,6 +338,9 @@ async def ai_travel_plan(req: PlanTripRequest):
             logger.error(f"Trip plan missing required fields: {missing}")
             raise HTTPException(status_code=422, detail=f"Trip plan missing required fields: {missing}")
 
+        # Sort hotel_areas by check_in_date
+        validated_trip.hotel_areas.sort(key=lambda x: x.get("check_in_date", ""))
+
         # Step 2: Build FlightRequest and HotelRequest(s) for complete_search
         flight_req = FlightRequest(
             origin=validated_trip.origin,
