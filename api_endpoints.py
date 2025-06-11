@@ -140,7 +140,8 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
 async def complete_travel_search(
     flight_request: FlightRequest,
     hotel_request: Optional[List[HotelRequest]] = Body(default=None),
-    special_instructions: Optional[str] = Body(default=None)
+    special_instructions: Optional[str] = Body(default=None),
+    day_plan: Optional[list] = Body(default=None)
 ):
     """
     Search for flights and multiple hotels concurrently and get AI recommendations for both.
@@ -222,7 +223,8 @@ async def complete_travel_search(
                 hotels_text=selected_hotels_text,
                 check_in_date=flight_request.outbound_date,
                 check_out_date=flight_request.return_date,
-                special_instructions=special_instructions
+                special_instructions=special_instructions,
+                day_plan=day_plan
             )
 
         # Combine results
@@ -356,7 +358,8 @@ async def ai_travel_plan(req: PlanTripRequest):
         ai_response = await complete_travel_search(
             flight_request=flight_req,
             hotel_request=hotel_reqs,
-            special_instructions=special_instructions
+            special_instructions=special_instructions,
+            day_plan=validated_trip.day_plan
         )
 
         return ai_response

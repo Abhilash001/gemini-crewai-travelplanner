@@ -572,14 +572,12 @@ async def get_ai_recommendation(data_type, formatted_data):
         return f"Unable to generate {data_type} recommendation due to an error."
 
 
-async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date, special_instructions=None):
+async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date, special_instructions=None, day_plan=None):
     """Generate a detailed travel itinerary based on flight and hotel information."""
     try:
         # Convert the string dates to datetime objects
         check_in = datetime.strptime(check_in_date, "%Y-%m-%d")
         check_out = datetime.strptime(check_out_date, "%Y-%m-%d")
-
-        # Calculate the difference in days
         days = (check_out - check_in).days
 
         llm_model = initialize_llm()
@@ -591,6 +589,14 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             llm=llm_model,
             verbose=False
         )
+
+        day_plan_section = ""
+        if day_plan:
+            day_plan_section = (
+                "\n**Suggested Day Plan (from user/AI):**\n"
+                f"{json.dumps(day_plan, indent=2)}\n"
+                "Incorporate these activities and areas into the itinerary as much as possible.\n"
+            )
 
         analyze_task = Task(
             description=f"""
@@ -607,6 +613,8 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             **Travel Dates**: {check_in_date} to {check_out_date} ({days} days)
 
             {"**Special Instructions:** " + special_instructions if special_instructions else ""}
+
+            {day_plan_section}
 
             The itinerary should include:
             - Flight arrival and departure information
