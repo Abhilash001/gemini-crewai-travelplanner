@@ -88,7 +88,7 @@ export class TravelPlannerComponent implements OnInit {
       const element = document.createElement('a');
       const file = new Blob([this.itineraryMarkdown], { type: 'text/markdown' });
       element.href = URL.createObjectURL(file);
-      element.download = `travel_itinerary_${this.travelForm.get('destination')?.value}_${this.travelForm.get('outboundDate')?.value}.md`;
+      element.download = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}.md`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -98,7 +98,7 @@ export class TravelPlannerComponent implements OnInit {
   downloadItineraryPdf() {
     if (!this.searchResults?.itinerary) return;
     const markdown = this.itineraryMarkdown;
-    const title = `travel_itinerary_${this.travelForm.get('destination')?.value}_${this.travelForm.get('outboundDate')?.value}`;
+    const title = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}`;
     this.http.post(
       `${this.API_BASE_URL}/generate_pdf/`,
       { markdown, title },
