@@ -10,6 +10,7 @@ from crewai import Agent, Task, Crew, Process, LLM
 from datetime import datetime
 from functools import lru_cache
 import re
+import json
 
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
@@ -110,6 +111,21 @@ class AIResponse(BaseModel):
     ai_flight_recommendation: str = ""
     ai_hotel_recommendations: Optional[List[str]] = []
     itinerary: str = ""
+
+class PlanTripRequest(BaseModel):
+    source_city: str
+    destination_city: str
+    from_date: str
+    return_date: str
+    instructions: str = ""
+
+class PlanTripResponse(BaseModel):
+    origin: str
+    destination: str
+    outbound_date: str
+    return_date: str
+    hotel_areas: list
+    day_plan: list
 
 
 # ==============================================
@@ -634,6 +650,73 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
     except Exception as e:
         logger.exception(f"Error generating itinerary: {str(e)}")
         raise
+
+
+async def plan_trip_agent(req: PlanTripRequest):
+    """
+    AI agent takes city names, dates, and instructions, and returns:
+    - IATA codes for airports
+    - Dates
+    - Hotel areas with check-in/out
+    - Day-wise plan
+    """
+    # --- Prompt LLM agent ---
+    llm = initialize_llm()
+    agent = Agent(
+        role="AI Travel Planner",
+        goal="Given source/destination cities and dates, suggest IATA codes, hotel areas, and a day-wise plan.",
+        backstory="Expert travel planner with knowledge of airports and city neighborhoods.",
+        llm=llm,
+        verbose=False
+    )
+    prompt = f"""
+    Given this trip request:
+    - Source city: {req.source_city}
+    - Destination city: {req.destination_city}
+    - From: {req.from_date}
+    - Return: {req.return_date}
+    - Special instructions: {req.instructions}
+
+    Please:
+    1. Suggest the best departure and arrival airports (IATA codes) for both cities.
+    2. Suggest areas/neighborhoods to stay in, with check-in/check-out dates.
+    3. Provide a rough day-wise plan with activities.
+    4. Output in JSON as:
+       {{
+         "origin": "...",
+         "destination": "...",
+         "outbound_date": "...",
+         "return_date": "...",
+         "hotel_areas": [
+           {{"location": "...", "check_in_date": "...", "check_out_date": "..."}}
+         ],
+         "day_plan": [
+           {{"date": "...", "activities": ["..."]}}
+         ]
+       }}
+    """
+    task = Task(
+        description=prompt,
+        agent=agent,
+        expected_output="A single JSON object as described above."
+    )
+    crew = Crew(
+        agents=[agent],
+        tasks=[task],
+        process=Process.sequential,
+        verbose=False
+    )
+    result = await asyncio.to_thread(crew.kickoff)
+
+    # Parse JSON from LLM output
+    match = re.search(r"\{[\s\S]+\}", str(result))
+    if not match:
+        raise HTTPException(status_code=500, detail="AI did not return valid JSON.")
+    try:
+        trip_json = json.loads(match.group(0))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not parse AI JSON output.")
+    return trip_json
 
 
 # After getting the itinerary string from the LLM
