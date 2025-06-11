@@ -87,7 +87,7 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
             raise HTTPException(status_code=400, detail="No hotel requests provided")
         # Run hotel searches for each location
         hotel_provider = os.getenv("HOTEL_PROVIDER", "booking").lower()
-        semaphore = asyncio.Semaphore(2)  # Limit to 2 concurrent searches
+        semaphore = asyncio.Semaphore(1)  # Limit to 1 concurrent search
 
         async def search_one(req):
             async with semaphore:
@@ -96,7 +96,7 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
                 else:
                     return await search_booking_hotels(req)
 
-        # Launch all searches, but only 2 run at a time
+        # Launch all searches, but only 1 run at a time
         hotels_results = await asyncio.gather(*(search_one(req) for req in hotel_request))
 
         if not hotels_results:

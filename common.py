@@ -353,7 +353,7 @@ async def search_google_hotels(hotel_request: HotelRequest):
 
 
 async def search_booking_hotels(hotel_request: HotelRequest):
-    """Fetch hotel information from Apify - Booking.com."""
+    """Fetch hotel information from Apify - Booking.com for both Hostels and all property types."""
     logger.info(f"Searching hotels for: {hotel_request.location}")
 
     check_in_date = datetime.strptime(hotel_request.check_in_date, "%Y-%m-%d")
@@ -364,7 +364,8 @@ async def search_booking_hotels(hotel_request: HotelRequest):
         logger.error("Check out date is less than or equal to check in date")
         return []
 
-    params = {
+    # Prepare params for Hostels
+    params_hostels = {
         "search": hotel_request.location,
         "maxItems": 5,
         "propertyType": "Hostels",
@@ -381,14 +382,36 @@ async def search_booking_hotels(hotel_request: HotelRequest):
         "minMaxPrice": "0-999999"
     }
 
-    hotel_results = await run_apify_booking_search(params)
+    # Prepare params for all property types ("none")
+    params_all = params_hostels.copy()
+    params_all["propertyType"] = "none"
 
-    if not hotel_results:
+    # Run both searches concurrently
+    results = await asyncio.gather(
+        run_apify_booking_search(params_hostels),
+        run_apify_booking_search(params_all),
+        return_exceptions=True
+    )
+
+    hotel_results_hostels = results[0] if not isinstance(results[0], Exception) else []
+    hotel_results_all = results[1] if not isinstance(results[1], Exception) else []
+
+    # Combine and deduplicate by hotel name + address
+    combined_hotels = hotel_results_hostels + hotel_results_all
+    seen = set()
+    unique_hotels = []
+    for hotel in combined_hotels:
+        key = (hotel.get("name", ""), hotel.get("address", ""))
+        if key not in seen:
+            seen.add(key)
+            unique_hotels.append(hotel)
+
+    if not unique_hotels:
         logger.warning("No hotels found in search results")
         return []
 
     formatted_hotels = []
-    for hotel in hotel_results:
+    for hotel in unique_hotels:
         try:
             formatted_hotels.append(HotelInfo(
                 name=hotel.get("name", "Unknown Hotel"),
@@ -401,7 +424,7 @@ async def search_booking_hotels(hotel_request: HotelRequest):
             logger.warning(f"Error formatting hotel data: {str(e)}")
             # Continue with next hotel rather than failing completely
 
-    logger.info(f"Found {len(formatted_hotels)} hotels")
+    logger.info(f"Found {len(formatted_hotels)} hotels (combined Hostels + All)")
     return formatted_hotels
 
 
