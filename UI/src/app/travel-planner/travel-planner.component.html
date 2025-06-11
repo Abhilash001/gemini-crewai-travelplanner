@@ -10,25 +10,31 @@
       <div class="form-grid">
         <div class="form-section">
           <h2>🌍 Trip Details</h2>
-          <div class="form-group">
-            <label>Source City</label>
-            <input type="text" formControlName="source_city" class="form-control" placeholder="e.g. Mumbai">
+          <!-- First row: Source, Destination, From Date, Return Date -->
+          <div class="form-row">
+            <div class="form-group">
+              <label>Source City</label>
+              <input type="text" formControlName="source_city" class="form-control" placeholder="e.g. Mumbai">
+            </div>
+            <div class="form-group">
+              <label>Destination City</label>
+              <input type="text" formControlName="destination_city" class="form-control" placeholder="e.g. Tokyo">
+            </div>
+            <div class="form-group">
+              <label>From Date</label>
+              <input type="date" formControlName="from_date" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Return Date</label>
+              <input type="date" formControlName="return_date" class="form-control">
+            </div>
           </div>
-          <div class="form-group">
-            <label>Destination City</label>
-            <input type="text" formControlName="destination_city" class="form-control" placeholder="e.g. Tokyo">
-          </div>
-          <div class="form-group">
-            <label>From Date</label>
-            <input type="date" formControlName="from_date" class="form-control">
-          </div>
-          <div class="form-group">
-            <label>Return Date</label>
-            <input type="date" formControlName="return_date" class="form-control">
-          </div>
-          <div class="form-group">
-            <label>Special Instructions (optional)</label>
-            <textarea formControlName="instructions" class="form-control" rows="3" placeholder="e.g. Prefer vegetarian food, avoid museums, include shopping, etc."></textarea>
+          <!-- Second row: Special Instructions -->
+          <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+              <label>Special Instructions (optional)</label>
+              <textarea formControlName="instructions" class="form-control" rows="3" placeholder="e.g. Prefer vegetarian food, avoid museums, include shopping, etc."></textarea>
+            </div>
           </div>
         </div>
       </div>

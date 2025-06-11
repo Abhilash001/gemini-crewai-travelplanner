@@ -92,6 +92,16 @@
   margin-bottom: 30px;
 }
 
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.form-row .form-group {
+  flex: 1;
+  min-width: 0;
+}
+
 .form-section h2 {
   color: #fafafa;
   font-size: 20px;
