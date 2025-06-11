@@ -26,13 +26,25 @@ export class TravelPlannerComponent implements OnInit {
     this.travelForm = this.fb.group({
       source_city: ['', Validators.required],
       destination_city: ['', Validators.required],
-      from_date: ['', Validators.required],
-      return_date: ['', Validators.required],
+      from_date: [this.getTomorrowDate(), Validators.required],
+      return_date: [this.getNextWeekDate(), Validators.required],
       instructions: ['']
     });
   }
 
   ngOnInit() {}
+
+  private getTomorrowDate(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+
+  private getNextWeekDate(): string {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 8);
+    return nextWeek.toISOString().split('T')[0];
+  }
 
   onSubmit() {
     if (this.travelForm.invalid) {
