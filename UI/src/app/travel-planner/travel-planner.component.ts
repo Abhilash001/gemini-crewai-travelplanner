@@ -3,12 +3,26 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-travel-planner',
   standalone: false,
   templateUrl: './travel-planner.component.html',
-  styleUrls: ['./travel-planner.component.css']
+  styleUrls: ['./travel-planner.component.css'],
+  animations: [
+    trigger('collapseReturn', [
+      state('void', style({ height: '0', opacity: 0 })),
+      state('*', style({ height: '*', opacity: 1 })),
+      transition(':enter', [
+        style({ height: '0', opacity: 0 }),
+        animate('200ms ease-out', style({ height: '*', opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('200ms ease-in', style({ height: '0', opacity: 0 }))
+      ])
+    ])
+  ]
 })
 export class TravelPlannerComponent implements OnInit {
   travelForm: FormGroup;
