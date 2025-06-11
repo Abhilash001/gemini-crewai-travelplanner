@@ -110,8 +110,9 @@ export class TravelPlannerComponent implements OnInit {
   }
 
   formatDuration(minutes: number | string): string {
+    if (minutes === null || minutes === undefined) return '';
     const min = typeof minutes === 'string' ? parseInt(minutes, 10) : minutes;
-    if (isNaN(min) || min < 0) return '';
+    if (isNaN(min) || min <= 0) return '';
     const hr = Math.floor(min / 60);
     const rem = min % 60;
     if (hr > 0 && rem > 0) return `${hr} hr ${rem} min`;
