@@ -4,7 +4,7 @@ import re
 from fastapi import FastAPI, HTTPException, Response, Body
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import pdfkit
 import markdown as md
 
@@ -13,7 +13,9 @@ from common import (
     FlightRequest, 
     HotelRequest,
     HotelsGrouped, 
-    ItineraryRequest, 
+    ItineraryRequest,
+    PlanTripRequest,
+    PlanTripResponse, 
     logger, 
     extract_recommended_flight_indices,
     extract_recommended_hotel_index,
@@ -24,7 +26,8 @@ from common import (
     search_flights, 
     search_google_hotels, 
     search_booking_hotels, 
-    strip_code_fence
+    strip_code_fence,
+    plan_trip_agent
 )
 
 # ==============================================
@@ -84,7 +87,7 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
             raise HTTPException(status_code=400, detail="No hotel requests provided")
         # Run hotel searches for each location
         hotel_provider = os.getenv("HOTEL_PROVIDER", "booking").lower()
-        semaphore = asyncio.Semaphore(2)  # Limit to 2 concurrent searches
+        semaphore = asyncio.Semaphore(1)  # Limit to 1 concurrent search
 
         async def search_one(req):
             async with semaphore:
@@ -93,7 +96,7 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
                 else:
                     return await search_booking_hotels(req)
 
-        # Launch all searches, but only 2 run at a time
+        # Launch all searches, but only 1 run at a time
         hotels_results = await asyncio.gather(*(search_one(req) for req in hotel_request))
 
         if not hotels_results:
@@ -137,7 +140,8 @@ async def get_hotel_recommendations(hotel_request: Optional[List[HotelRequest]] 
 async def complete_travel_search(
     flight_request: FlightRequest,
     hotel_request: Optional[List[HotelRequest]] = Body(default=None),
-    special_instructions: Optional[str] = Body(default=None)
+    special_instructions: Optional[str] = Body(default=None),
+    day_plan: Optional[list] = Body(default=None)
 ):
     """
     Search for flights and multiple hotels concurrently and get AI recommendations for both.
@@ -219,7 +223,8 @@ async def complete_travel_search(
                 hotels_text=selected_hotels_text,
                 check_in_date=flight_request.outbound_date,
                 check_out_date=flight_request.return_date,
-                special_instructions=special_instructions
+                special_instructions=special_instructions,
+                day_plan=day_plan
             )
 
         # Combine results
@@ -292,4 +297,76 @@ def generate_pdf(req: MarkdownToPdfRequest):
     return Response(pdf, media_type="application/pdf", headers={
         "Content-Disposition": f"attachment; filename={req.title.replace(' ', '_')}.pdf"
     })
+
+
+@app.post("/plan_trip/", response_model=PlanTripResponse)
+async def plan_trip(req: PlanTripRequest):
+    """Generate an itinerary based on provided flight and hotel information."""
+    try:
+        trip_json = await plan_trip(req=req)
+
+        return trip_json
+    except Exception as e:
+        logger.exception(f"Plan trip error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Plan trip error: {str(e)}")
+
+
+@app.post("/ai_travel_plan/", response_model=AIResponse)
+async def ai_travel_plan(req: PlanTripRequest):
+    """
+    One-stop endpoint: User provides city names, dates, instructions.
+    Returns full AIResponse (flights, hotels, recommendations, itinerary).
+    """
+    try:
+        # Step 1: Use AI agent to generate structured trip plan
+        trip_plan = await plan_trip_agent(req)
+
+        # Step 1.5: Validate trip_plan as PlanTripResponse and check all fields
+        try:
+            validated_trip = PlanTripResponse(**trip_plan)
+        except ValidationError as ve:
+            logger.error(f"Trip plan validation error: {ve}")
+            raise HTTPException(status_code=422, detail=f"Trip plan validation error: {ve}")
+
+        # Check for missing/empty fields
+        missing = []
+        for field in ["origin", "destination", "outbound_date", "return_date", "hotel_areas", "day_plan"]:
+            value = getattr(validated_trip, field, None)
+            if value is None or (isinstance(value, str) and not value.strip()) or (isinstance(value, list) and not value):
+                missing.append(field)
+        if missing:
+            logger.error(f"Trip plan missing required fields: {missing}")
+            raise HTTPException(status_code=422, detail=f"Trip plan missing required fields: {missing}")
+
+        # Sort hotel_areas by check_in_date
+        validated_trip.hotel_areas.sort(key=lambda x: x.get("check_in_date", ""))
+
+        # Step 2: Build FlightRequest and HotelRequest(s) for complete_search
+        flight_req = FlightRequest(
+            origin=validated_trip.origin,
+            destination=validated_trip.destination,
+            outbound_date=validated_trip.outbound_date,
+            return_date=validated_trip.return_date
+        )
+        hotel_reqs = [
+            HotelRequest(
+                location=area["location"],
+                check_in_date=area["check_in_date"],
+                check_out_date=area["check_out_date"]
+            ) for area in validated_trip.hotel_areas
+        ]
+        special_instructions = req.instructions
+
+        # Step 3: Call complete_search logic directly (not via HTTP)
+        ai_response = await complete_travel_search(
+            flight_request=flight_req,
+            hotel_request=hotel_reqs,
+            special_instructions=special_instructions,
+            day_plan=validated_trip.day_plan
+        )
+
+        return ai_response
+    except Exception as e:
+        logger.exception(f"AI Travel Plan error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"AI Travel Plan error: {str(e)}")
 

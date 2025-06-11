@@ -10,6 +10,7 @@ from crewai import Agent, Task, Crew, Process, LLM
 from datetime import datetime
 from functools import lru_cache
 import re
+import json
 
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
@@ -110,6 +111,21 @@ class AIResponse(BaseModel):
     ai_flight_recommendation: str = ""
     ai_hotel_recommendations: Optional[List[str]] = []
     itinerary: str = ""
+
+class PlanTripRequest(BaseModel):
+    source_city: str
+    destination_city: str
+    from_date: str
+    return_date: str
+    instructions: str = ""
+
+class PlanTripResponse(BaseModel):
+    origin: str
+    destination: str
+    outbound_date: str
+    return_date: str
+    hotel_areas: list
+    day_plan: list
 
 
 # ==============================================
@@ -337,7 +353,7 @@ async def search_google_hotels(hotel_request: HotelRequest):
 
 
 async def search_booking_hotels(hotel_request: HotelRequest):
-    """Fetch hotel information from Apify - Booking.com."""
+    """Fetch hotel information from Apify - Booking.com for both Hostels and all property types."""
     logger.info(f"Searching hotels for: {hotel_request.location}")
 
     check_in_date = datetime.strptime(hotel_request.check_in_date, "%Y-%m-%d")
@@ -348,7 +364,8 @@ async def search_booking_hotels(hotel_request: HotelRequest):
         logger.error("Check out date is less than or equal to check in date")
         return []
 
-    params = {
+    # Prepare params for Hostels
+    params_hostels = {
         "search": hotel_request.location,
         "maxItems": 5,
         "propertyType": "Hostels",
@@ -365,14 +382,36 @@ async def search_booking_hotels(hotel_request: HotelRequest):
         "minMaxPrice": "0-999999"
     }
 
-    hotel_results = await run_apify_booking_search(params)
+    # Prepare params for all property types ("none")
+    params_all = params_hostels.copy()
+    params_all["propertyType"] = "none"
 
-    if not hotel_results:
+    # Run both searches concurrently
+    results = await asyncio.gather(
+        run_apify_booking_search(params_hostels),
+        run_apify_booking_search(params_all),
+        return_exceptions=True
+    )
+
+    hotel_results_hostels = results[0] if not isinstance(results[0], Exception) else []
+    hotel_results_all = results[1] if not isinstance(results[1], Exception) else []
+
+    # Combine and deduplicate by hotel name + address
+    combined_hotels = hotel_results_hostels + hotel_results_all
+    seen = set()
+    unique_hotels = []
+    for hotel in combined_hotels:
+        key = (hotel.get("name", ""), hotel.get("address", ""))
+        if key not in seen:
+            seen.add(key)
+            unique_hotels.append(hotel)
+
+    if not unique_hotels:
         logger.warning("No hotels found in search results")
         return []
 
     formatted_hotels = []
-    for hotel in hotel_results:
+    for hotel in unique_hotels:
         try:
             formatted_hotels.append(HotelInfo(
                 name=hotel.get("name", "Unknown Hotel"),
@@ -385,7 +424,7 @@ async def search_booking_hotels(hotel_request: HotelRequest):
             logger.warning(f"Error formatting hotel data: {str(e)}")
             # Continue with next hotel rather than failing completely
 
-    logger.info(f"Found {len(formatted_hotels)} hotels")
+    logger.info(f"Found {len(formatted_hotels)} hotels (combined Hostels + All)")
     return formatted_hotels
 
 
@@ -556,14 +595,12 @@ async def get_ai_recommendation(data_type, formatted_data):
         return f"Unable to generate {data_type} recommendation due to an error."
 
 
-async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date, special_instructions=None):
+async def generate_itinerary(destination, flights_text, hotels_text, check_in_date, check_out_date, special_instructions=None, day_plan=None):
     """Generate a detailed travel itinerary based on flight and hotel information."""
     try:
         # Convert the string dates to datetime objects
         check_in = datetime.strptime(check_in_date, "%Y-%m-%d")
         check_out = datetime.strptime(check_out_date, "%Y-%m-%d")
-
-        # Calculate the difference in days
         days = (check_out - check_in).days
 
         llm_model = initialize_llm()
@@ -575,6 +612,14 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             llm=llm_model,
             verbose=False
         )
+
+        day_plan_section = ""
+        if day_plan:
+            day_plan_section = (
+                "\n**Suggested Day Plan (from user/AI):**\n"
+                f"{json.dumps(day_plan, indent=2)}\n"
+                "Incorporate these activities and areas into the itinerary as much as possible.\n"
+            )
 
         analyze_task = Task(
             description=f"""
@@ -591,6 +636,8 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
             **Travel Dates**: {check_in_date} to {check_out_date} ({days} days)
 
             {"**Special Instructions:** " + special_instructions if special_instructions else ""}
+
+            {day_plan_section}
 
             The itinerary should include:
             - Flight arrival and departure information
@@ -634,6 +681,75 @@ async def generate_itinerary(destination, flights_text, hotels_text, check_in_da
     except Exception as e:
         logger.exception(f"Error generating itinerary: {str(e)}")
         raise
+
+
+async def plan_trip_agent(req: PlanTripRequest):
+    """
+    AI agent takes city names, dates, and instructions, and returns:
+    - IATA codes for airports
+    - Dates
+    - Hotel areas with check-in/out
+    - Day-wise plan
+    """
+    # --- Prompt LLM agent ---
+    llm = initialize_llm()
+    agent = Agent(
+        role="AI Travel Planner",
+        goal="Given source/destination cities and dates, suggest IATA codes, hotel areas, and a day-wise plan.",
+        backstory="Expert travel planner with knowledge of airports and city neighborhoods.",
+        llm=llm,
+        verbose=False
+    )
+    prompt = f"""
+    Given this trip request:
+    - Source city: {req.source_city}
+    - Destination city: {req.destination_city}
+    - From: {req.from_date}
+    - Return: {req.return_date}
+    - Special instructions: {req.instructions}
+
+    Please:
+    1. Suggest the best departure and arrival airports (IATA codes) for both cities.
+    2. Suggest areas/neighborhoods to stay in, with check-in/check-out dates.
+       - For each area, ONLY provide the exact city, area, or landmark name that can be directly searched in Booking.com.
+       - DO NOT include any descriptions, explanations, or text in parentheses.
+    3. Provide a rough day-wise plan with activities.
+    4. Output in JSON as:
+       {{
+         "origin": "...",
+         "destination": "...",
+         "outbound_date": "...",
+         "return_date": "...",
+         "hotel_areas": [
+           {{"location": "...", "check_in_date": "...", "check_out_date": "..."}}
+         ],
+         "day_plan": [
+           {{"date": "...", "activities": ["..."]}}
+         ]
+       }}
+    """
+    task = Task(
+        description=prompt,
+        agent=agent,
+        expected_output="A single JSON object as described above."
+    )
+    crew = Crew(
+        agents=[agent],
+        tasks=[task],
+        process=Process.sequential,
+        verbose=False
+    )
+    result = await asyncio.to_thread(crew.kickoff)
+
+    # Parse JSON from LLM output
+    match = re.search(r"\{[\s\S]+\}", str(result))
+    if not match:
+        raise HTTPException(status_code=500, detail="AI did not return valid JSON.")
+    try:
+        trip_json = json.loads(match.group(0))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not parse AI JSON output.")
+    return trip_json
 
 
 # After getting the itinerary string from the LLM
