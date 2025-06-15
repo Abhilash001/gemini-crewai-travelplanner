@@ -2,84 +2,73 @@
   <!-- Main Content -->
   <div class="main-content">
     <header class="header">
-      <h1>✈️ AI-Powered Travel Planner</h1>
-      <p>Just enter your cities, dates, and any special instructions. AI will do the rest!</p>
+      <h1>AI-Powered Travel Planner</h1>
+      <p>Your ultimate companion for seamless travel planning.</p>
     </header>
-    <!-- Search Form -->
     <form [formGroup]="travelForm" (ngSubmit)="onSubmit()" class="search-form">
-      <div class="form-grid">
-        <div class="form-section">
-          <h2>🌍 Trip Details</h2>
-          <!-- First row: Source, Destination, From Date, Return Date -->
-          <div class="form-row">
-            <div class="form-group">
-              <label>Source City</label>
-              <input type="text" formControlName="source_city" class="form-control" placeholder="e.g. Mumbai">
-            </div>
-            <div class="form-group">
-              <label>Destination City</label>
-              <input type="text" formControlName="destination_city" class="form-control" placeholder="e.g. Tokyo">
-            </div>
-            <div class="form-group">
-              <label>From Date</label>
-              <input type="date" formControlName="from_date" class="form-control">
-            </div>
-            <div class="form-group">
-              <label>Return Date</label>
-              <input type="date" formControlName="return_date" class="form-control">
-            </div>
-          </div>
-          <!-- Second row: Special Instructions -->
-          <div class="form-row">
-            <div class="form-group" style="flex: 1;">
-              <label>Special Instructions (optional)</label>
-              <textarea formControlName="instructions" class="form-control" rows="3" placeholder="e.g. Prefer vegetarian food, avoid museums, include shopping, etc."></textarea>
-            </div>
+      <div class="search-inputs">
+        <div class="input-group">
+          <label for="source_city">Origin</label>
+          <div class="input-with-icon">
+            <img src="assets/location-pin.svg" alt="Location Pin" class="input-icon">
+            <input id="source_city" type="text" formControlName="source_city" class="form-control" placeholder="e.g. Mumbai">
           </div>
         </div>
+        <div class="input-group">
+          <label for="destination_city">Destination</label>
+          <div class="input-with-icon">
+            <img src="assets/location-pin.svg" alt="Location Pin" class="input-icon">
+            <input id="destination_city" type="text" formControlName="destination_city" class="form-control" placeholder="e.g. Tokyo">
+          </div>
+        </div>
+        <div class="input-group date-input">
+          <label for="from_date">Departure Date</label>
+          <input id="from_date" type="date" formControlName="from_date" class="form-control">
+        </div>
+        <div class="input-group date-input">
+          <label for="return_date">Return Date</label>
+          <input id="return_date" type="date" formControlName="return_date" class="form-control">
+        </div>
+      </div>
+      <div class="instructions-group">
+        <label for="instructions">Special Instructions (optional)</label>
+        <textarea id="instructions" formControlName="instructions" class="form-control" rows="2" placeholder="e.g. Prefer vegetarian food, avoid museums, include shopping, etc."></textarea>
       </div>
       <div class="submit-section">
         <button type="submit" class="search-btn" [disabled]="loading || travelForm.invalid">
           <span *ngIf="loading">Searching...</span>
-          <span *ngIf="!loading">🔍 Search</span>
+          <span *ngIf="!loading">Search</span>
         </button>
       </div>
     </form>
-    <!-- Loading Spinner -->
     <div *ngIf="loading" class="loading-spinner">
       <div class="spinner"></div>
       <p>AI is planning your trip...</p>
     </div>
-    <!-- Error Messages -->
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
     </div>
-    <!-- Results -->
     <div *ngIf="searchResults && !loading" class="results-container">
-      <!-- Tabs -->
       <div class="tabs">
         <button class="tab-button" [class.active]="activeTab === 'flights'" (click)="activeTab = 'flights'">
-          ✈️ Flights
+          Flights
         </button>
         <button class="tab-button" [class.active]="activeTab === 'hotels'" (click)="activeTab = 'hotels'">
-          🏨 Hotels
+          Hotels
         </button>
         <button class="tab-button" [class.active]="activeTab === 'recommendations'" (click)="activeTab = 'recommendations'">
-          🏆 AI Recommendations
+          AI Recommendations
         </button>
         <button *ngIf="searchResults.itinerary" class="tab-button" [class.active]="activeTab === 'itinerary'" (click)="activeTab = 'itinerary'">
-          📅 Itinerary
+          Itinerary
         </button>
       </div>
-      <!-- Tab Content -->
       <div class="tab-content">
-        <!-- Flights Tab -->
         <div *ngIf="activeTab === 'flights'" class="flights-section">
-          <h3>✈️ Available Flights from {{travelForm.get('source_city')?.value}} to {{travelForm.get('destination_city')?.value}}</h3>
+          <h3>Available Flights from {{travelForm.get('source_city')?.value}} to {{travelForm.get('destination_city')?.value}}</h3>
           <div *ngIf="searchResults.flights?.length > 0" class="flights-list">
             <div *ngFor="let flight of searchResults.flights; let i = index" class="flight-row">
               <div class="flight-row-main">
-                <!-- Airline logo and name -->
                 <div class="flight-airline-col">
                   <img *ngIf="flight.legs && flight.legs.length > 0 && flight.legs[0].airline_logo"
                        [src]="flight.legs[0].airline_logo"
@@ -90,14 +79,12 @@
                     <div class="flight-class">{{ flight.travel_class }}</div>
                   </div>
                 </div>
-                <!-- Departure info -->
                 <div class="flight-time-col">
                   <div class="flight-time-main">
                     <span class="flight-time">{{ flight.legs && flight.legs.length > 0 ? flight.legs[0].departure_time : flight.departure }}</span>
                     <span class="flight-airport">{{ flight.legs && flight.legs.length > 0 ? flight.legs[0].departure_airport : travelForm.get('origin')?.value }}</span>
                   </div>
                 </div>
-                <!-- Arrow and duration -->
                 <div class="flight-middle-col">
                   <span class="flight-arrow">→</span>
                   <span class="flight-duration">{{ formatDuration(flight.duration) }}</span>
@@ -107,7 +94,6 @@
                     {{ flight.layovers.length }} layover{{ flight.layovers.length > 1 ? 's' : '' }}
                   </span>
                 </div>
-                <!-- Arrival info -->
                 <div class="flight-time-col">
                   <div class="flight-time-main">
                     <span class="flight-time">
@@ -118,7 +104,6 @@
                     </span>
                   </div>
                 </div>
-                <!-- Price and select -->
                 <div class="flight-price-col">
                   <div class="flight-price">₹{{ flight.price }}</div>
                   <button class="select-btn modern-select-btn">Select flight</button>
@@ -129,7 +114,6 @@
                   </button>
                 </div>
               </div>
-              <!-- Details row (optional, can be collapsible) -->
               <div class="flight-row-details">
                 <div *ngIf="flight.layovers && flight.layovers.length" class="flight-layovers-summary">
                   <span *ngFor="let lay of flight.layovers; let idx = index">
@@ -147,7 +131,6 @@
                   </ul>
                 </div>
               </div>
-              <!-- Return Flights Section -->
               <div *ngIf="flight.return_flights?.length && returnFlightsOpen[i]"
                    class="return-flights"
                    [@collapseReturn]>
@@ -196,14 +179,12 @@
                       <div class="flight-price">₹{{ ret.price }}</div>
                     </div>
                   </div>
-                    <!-- Show layovers for return flight -->
                     <div *ngIf="ret.layovers && ret.layovers.length" class="flight-layovers-summary">
                     <span *ngFor="let lay of ret.layovers; let idx = index">
                       🛑 <strong>{{ lay.airport }}</strong> ({{ lay.airport_id }}) - {{ formatDuration(lay.duration) }}<span *ngIf="lay.overnight"> (Overnight)</span>
                       <span *ngIf="ret.layovers && idx < ret.layovers.length - 1">|</span>
                     </span>
                     </div>
-                    <!-- Show legs for return flight -->
                     <div *ngIf="ret.legs && ret.legs.length > 0" class="flight-legs-summary">
                     <ul>
                       <li *ngFor="let leg of ret.legs">
@@ -221,7 +202,6 @@
             No flights found for your search criteria.
           </div>
         </div>
-        <!-- Hotels Tab -->
         <div *ngIf="activeTab === 'hotels'" class="hotels-section">
           <ng-container *ngIf="searchResults.hotels_grouped?.length > 0; else noHotels">
             <div *ngFor="let group of searchResults.hotels_grouped; let idx = index" class="hotel-location-group">
@@ -255,7 +235,6 @@
             <div class="no-results">No hotels found for your search criteria.</div>
           </ng-template>
         </div>
-        <!-- Recommendations Tab -->
         <div *ngIf="activeTab === 'recommendations'" class="recommendations-section">
           <div *ngIf="searchResults.ai_flight_recommendation" class="recommendation-card">
             <h3>✈️ AI Flight Recommendation</h3>
@@ -268,7 +247,6 @@
             </div>
           </ng-container>
         </div>
-        <!-- Itinerary Tab -->
         <div *ngIf="activeTab === 'itinerary' && searchResults.itinerary" class="itinerary-section">
           <h3>📅 Your Travel Itinerary</h3>
           <div class="itinerary-content markdown-body" markdown [data]="itineraryMarkdown"></div>

@@ -1,13 +1,21 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
+import { MarkdownModule } from 'ngx-markdown';
 import { trigger, state, style, transition, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-travel-planner',
-  standalone: false,
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    HttpClientModule,
+    MarkdownModule
+  ],
   templateUrl: './travel-planner.component.html',
   styleUrls: ['./travel-planner.component.css'],
   animations: [
