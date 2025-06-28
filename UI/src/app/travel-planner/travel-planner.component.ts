@@ -56,6 +56,12 @@ export class TravelPlannerComponent implements OnInit {
 
   ngOnInit() {}
 
+  private getFormattedTodayDateTime(): string {
+    const today = new Date();
+    today.setDate(today.getDate());
+    return this.formatDateTime(today);
+  }
+
   private getTomorrowDate(): string {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -67,6 +73,16 @@ export class TravelPlannerComponent implements OnInit {
     nextWeek.setDate(nextWeek.getDate() + 8);
     return nextWeek.toISOString().split('T')[0];
   }
+  
+  private formatDateTime(date: Date): string {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-indexed
+  const day = date.getDate().toString().padStart(2, '0');
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day}-${hours}${minutes}`;
+}
 
   onSubmit() {
     if (this.travelForm.invalid) {
@@ -110,7 +126,7 @@ export class TravelPlannerComponent implements OnInit {
       const element = document.createElement('a');
       const file = new Blob([this.itineraryMarkdown], { type: 'text/markdown' });
       element.href = URL.createObjectURL(file);
-      element.download = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}.md`;
+      element.download = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}_${this.getFormattedTodayDateTime()}.md`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -120,7 +136,7 @@ export class TravelPlannerComponent implements OnInit {
   downloadItineraryPdf() {
     if (!this.searchResults?.itinerary) return;
     const markdown = this.itineraryMarkdown;
-    const title = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}`;
+    const title = `travel_itinerary_${this.travelForm.get('source_city')?.value}_${this.travelForm.get('destination_city')?.value}_${this.travelForm.get('from_date')?.value}_${this.travelForm.get('return_date')?.value}_${this.getFormattedTodayDateTime()}`;
     this.http.post(
       `${this.API_BASE_URL}/generate_pdf/`,
       { markdown, title },
